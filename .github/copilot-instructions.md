@@ -15,11 +15,11 @@ This is a polyglot monorepo designed for high data integrity and financial preci
     - **Frontend:** Next.js (App Router), TypeScript, Tailwind CSS.
 
 ## 3. Instruction Hierarchy
-Specific coding standards and architectural patterns are defined in scoped instruction files. You must adhere to the guidelines located in `.github/instructions/` depending on the active file context:
+Specific coding standards and architectural patterns are defined in scoped instruction files located in `.github/instructions/`. These files use file-pattern matching to automatically apply context-specific guidelines:
 
-- **Frontend UI & Components:** See `shadcn.instructions.md` (Strict adherence to MCP tools and Shadcn patterns).
-- **Frontend Architecture:** See `nextjs.instructions.md` (Nord Theme, Server Components, Project Structure).
-- **Backend Logic:** See `java.instructions.md` (Reactive streams, Immutability, BigDecimal usage).
+- **Backend Logic:** `java.instructions.md` — Reactive streams, Immutability, BigDecimal usage.
+- **Frontend Architecture:** `nextjs.instructions.md` — Nord Theme, Server Components, Project Structure.
+- **Frontend UI & Components:** `shadcn.instructions.md` — Strict adherence to MCP tools and Shadcn patterns.
 
 ## 4. Global Engineering Standards
 ### Security
