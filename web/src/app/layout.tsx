@@ -1,20 +1,24 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Mithril Vault",
-  description: "A centralized dashboard for personal financial management, transaction tracking, and goal visualization.",
+  description:
+    "A centralized dashboard for personal financial management, transaction tracking, and goal visualization.",
+  keywords: [
+    "finance",
+    "budgeting",
+    "expense tracking",
+    "personal finance",
+    "financial management",
+  ],
+  authors: [{ name: "Lucas Correia da Silva" }],
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ECEFF4",
 };
 
 export default function RootLayout({
@@ -24,9 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="bg-background text-foreground min-h-screen antialiased">
         {children}
       </body>
     </html>

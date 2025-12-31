@@ -61,28 +61,28 @@
 
 **Next.js Configuration**:
 
-- [ ] T008 [US1] Update web/next.config.ts to enable React strict mode and optimize package imports for lucide-react
-- [ ] T009 [US1] Update web/package.json to add shadcn/ui dependencies (class-variance-authority, clsx, tailwind-merge) and Radix UI primitives
+- [X] T008 [US1] Update web/next.config.ts to enable React strict mode and optimize package imports for lucide-react
+- [X] T009 [US1] Update web/package.json to add shadcn/ui dependencies (class-variance-authority, clsx, tailwind-merge) and Radix UI primitives
 
 **Tailwind & Theme Configuration**:
 
-- [ ] T010 [US1] Create web/src/config/theme.ts with complete Nord theme color definitions (polarNight, snowStorm, frost, aurora) and semantic color mappings
-- [ ] T011 [US1] Create web/tailwind.config.ts extending default theme with Nord colors from theme.ts and configuring Shadcn component paths
-- [ ] T012 [US1] Update web/src/app/globals.css to include Tailwind directives and CSS variables for Nord theme colors aligned with Shadcn theming system
-- [ ] T013 [US1] Update web/src/app/layout.tsx to apply Nord theme colors to root HTML element and configure metadata
+- [X] T010 [US1] Create web/src/config/theme.ts with complete Nord theme color definitions (polarNight, snowStorm, frost, aurora) and semantic color mappings
+- [X] T011 [US1] Create web/tailwind.config.ts extending default theme with Nord colors from theme.ts and configuring Shadcn component paths
+- [X] T012 [US1] Update web/src/app/globals.css to include Tailwind directives and CSS variables for Nord theme colors aligned with Shadcn theming system
+- [X] T013 [US1] Update web/src/app/layout.tsx to apply Nord theme colors to root HTML element and configure metadata
 
 **ESLint Configuration**:
 
-- [ ] T014 [US1] Update web/eslint.config.mjs to add TypeScript-specific rules (no-unused-vars with underscore exception, no-explicit-any as warning)
+- [X] T014 [US1] Update web/eslint.config.mjs to add TypeScript-specific rules (no-unused-vars with underscore exception, no-explicit-any as warning)
 
 **Shadcn UI Integration**:
 
-- [ ] T015 [US1] Create web/components.json configuring Shadcn with New York style, Nord theme base color, CSS variables mode, and FSD-aligned component paths
-- [ ] T016 [US1] Install initial Shadcn components (button, card) to web/src/shared/components/ui/ using npx shadcn@latest add command
+- [X] T015 [US1] Create web/components.json configuring Shadcn with New York style, Nord theme base color, CSS variables mode, and FSD-aligned component paths
+- [X] T016 [US1] Install initial Shadcn components (button, card) to web/src/shared/components/ui/ using npx shadcn@latest add command
 
 **API Client Setup**:
 
-- [ ] T017 [US1] Create web/src/config/api.ts with API base URL configuration from NEXT_PUBLIC_API_URL environment variable
+- [X] T017 [US1] Create web/src/config/api.ts with API base URL configuration from NEXT_PUBLIC_API_URL environment variable
 
 **Checkpoint**: At this point, User Story 1 should be fully functional - developer can start frontend, use theme colors, import Shadcn components, and ESLint works correctly
 
@@ -98,30 +98,30 @@
 
 **Gradle Dependencies**:
 
-- [ ] T018 [US2] Update api/build.gradle to add spring-boot-starter-data-mongodb-reactive and spring-boot-starter-actuator dependencies
+- [X] T018 [US2] Update api/build.gradle to add spring-boot-starter-data-mongodb-reactive and spring-boot-starter-actuator dependencies
 
 **MongoDB Configuration**:
 
-- [ ] T019 [P] [US2] Create api/src/main/java/com/mithrilvault/api/infrastructure/config/MongoConfig.java with reactive MongoDB configuration and connection pool settings
-- [ ] T020 [P] [US2] Update api/src/main/resources/application.yaml with MongoDB connection URI from environment variable and connection pool parameters (min-size: 10, max-size: 100, timeouts)
+- [X] T019 [P] [US2] Create api/src/main/java/com/mithrilvault/api/infrastructure/config/MongoConfig.java with reactive MongoDB configuration and connection pool settings
+- [X] T020 [P] [US2] Update api/src/main/resources/application.yaml with MongoDB connection URI from environment variable and connection pool parameters (min-size: 10, max-size: 100, timeouts)
 
 **Spring Profiles**:
 
-- [ ] T021 [P] [US2] Create api/src/main/resources/application-dev.yaml with development-specific settings (verbose logging, show SQL, relaxed security)
-- [ ] T022 [P] [US2] Create api/src/main/resources/application-test.yaml with test-specific settings (embedded test database preference, test data initialization)
-- [ ] T023 [P] [US2] Create api/src/main/resources/application-prod.yaml with production-specific settings (minimal logging, security hardening, performance optimization)
+- [X] T021 [P] [US2] Create api/src/main/resources/application-dev.yaml with development-specific settings (verbose logging, show SQL, relaxed security)
+- [X] T022 [P] [US2] Create api/src/main/resources/application-test.yaml with test-specific settings (embedded test database preference, test data initialization)
+- [X] T023 [P] [US2] Create api/src/main/resources/application-prod.yaml with production-specific settings (minimal logging, security hardening, performance optimization)
 
 **CORS Configuration**:
 
-- [ ] T024 [US2] Create api/src/main/java/com/mithrilvault/api/infrastructure/config/CorsConfig.java implementing WebFluxConfigurer with environment-specific allowed origins from CORS_ALLOWED_ORIGINS
+- [X] T024 [US2] Create api/src/main/java/com/mithrilvault/api/infrastructure/config/CorsConfig.java implementing WebFluxConfigurer with environment-specific allowed origins from CORS_ALLOWED_ORIGINS
 
 **WebFlux Configuration**:
 
-- [ ] T025 [US2] Create api/src/main/java/com/mithrilvault/api/infrastructure/config/WebFluxConfig.java with codec configuration and reactive context propagation settings
+- [X] T025 [US2] Create api/src/main/java/com/mithrilvault/api/infrastructure/config/WebFluxConfig.java with codec configuration and reactive context propagation settings
 
 **Actuator Configuration**:
 
-- [ ] T026 [US2] Update api/src/main/resources/application.yaml to enable Spring Boot Actuator health and info endpoints with MongoDB health indicator and show-details setting
+- [X] T026 [US2] Update api/src/main/resources/application.yaml to enable Spring Boot Actuator health and info endpoints with MongoDB health indicator and show-details setting
 
 **Checkpoint**: At this point, User Story 2 should be fully functional - backend starts successfully, connects to MongoDB, health checks return UP status, and CORS is configured for frontend
 
@@ -137,17 +137,17 @@
 
 **Environment Integration**:
 
-- [ ] T027 [US3] Document MongoDB connection URI format in api/.env.example with authentication and connection options for docker-compose MongoDB service
-- [ ] T028 [US3] Document CORS allowed origins in api/.env.example including both localhost:3000 and 127.0.0.1:3000 for development
-- [ ] T029 [US3] Document frontend API URL in web/.env.example pointing to backend running on localhost:8080
+- [X] T027 [US3] Document MongoDB connection URI format in api/.env.example with authentication and connection options for docker-compose MongoDB service
+- [X] T028 [US3] Document CORS allowed origins in api/.env.example including both localhost:3000 and 127.0.0.1:3000 for development
+- [X] T029 [US3] Document frontend API URL in web/.env.example pointing to backend running on localhost:8080
 
 **Docker Compose Enhancement**:
 
-- [ ] T030 [US3] Verify docker-compose.yml MongoDB configuration matches environment variable references in .env.example and includes proper volume mounting for data persistence
+- [X] T030 [US3] Verify docker-compose.yml MongoDB configuration matches environment variable references in .env.example and includes proper volume mounting for data persistence
 
 **Cross-Service Validation**:
 
-- [ ] T031 [US3] Update root README.md with full-stack startup sequence (docker-compose → backend → frontend) and troubleshooting guide for common issues
+- [X] T031 [US3] Update root README.md with full-stack startup sequence (docker-compose → backend → frontend) and troubleshooting guide for common issues
 
 **Checkpoint**: All user stories should now be independently functional - developers can run entire stack locally with proper frontend-backend communication
 
@@ -157,13 +157,13 @@
 
 **Purpose**: Final improvements and validation affecting multiple components
 
-- [ ] T032 [P] Add inline comments to all configuration files (application.yaml, next.config.ts, tailwind.config.ts) explaining key settings per success criteria SC-007
-- [ ] T033 [P] Validate all environment variable files (.env.example) are properly documented with descriptions and example values per functional requirement FR-016
-- [ ] T034 [P] Add graceful error handling in api/src/main/java/com/mithrilvault/api/application/GlobalExceptionHandler.java for missing environment variables with clear error messages per success criteria SC-008
-- [ ] T035 Run complete onboarding validation following specs/001-environment-setup/quickstart.md to verify 15-minute setup goal per success criteria SC-001
-- [ ] T036 [P] Verify frontend hot-reload performance is under 2 seconds per success criteria SC-002
-- [ ] T037 [P] Verify backend startup time is under 30 seconds with database connection per success criteria SC-003
-- [ ] T038 Run ESLint on entire web/ codebase and verify zero errors per success criteria SC-004
+- [X] T032 [P] Add inline comments to all configuration files (application.yaml, next.config.ts, tailwind.config.ts) explaining key settings per success criteria SC-007
+- [X] T033 [P] Validate all environment variable files (.env.example) are properly documented with descriptions and example values per functional requirement FR-016
+- [X] T034 [P] Add graceful error handling in api/src/main/java/com/mithrilvault/api/application/GlobalExceptionHandler.java for missing environment variables with clear error messages per success criteria SC-008
+- [X] T035 Run complete onboarding validation following specs/001-environment-setup/quickstart.md to verify 15-minute setup goal per success criteria SC-001
+- [X] T036 [P] Verify frontend hot-reload performance is under 2 seconds per success criteria SC-002
+- [X] T037 [P] Verify backend startup time is under 30 seconds with database connection per success criteria SC-003
+- [X] T038 Run ESLint on entire web/ codebase and verify zero errors per success criteria SC-004
 
 ---
 
