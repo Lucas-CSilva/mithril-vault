@@ -4,6 +4,7 @@ import com.mithrilvault.api.application.response.ErrorResponse;
 import com.mithrilvault.api.domain.model.DomainError;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -13,9 +14,19 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(ResponseStatusException.class)
+  public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException ex) {
+    log.info("A response status exception occurred: {}", ex.getMessage(), ex);
+
+    return ResponseEntity.status(ex.getStatusCode())
+        .body(new ErrorResponse(DomainError.builder().message(ex.getMessage()).build()));
+  }
+
   @ExceptionHandler(IllegalStateException.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public ErrorResponse handleIllegalStateException(IllegalStateException ex) {
+    log.error("An illegal state exception occurred: {}", ex.getMessage(), ex);
+
     String message = ex.getMessage();
 
     if (message != null && message.contains("Could not resolve placeholder")) {
@@ -29,15 +40,11 @@ public class GlobalExceptionHandler {
     return new ErrorResponse(DomainError.builder().message(message).build());
   }
 
-  @ExceptionHandler(ResponseStatusException.class)
-  @ResponseStatus(HttpStatus.NOT_FOUND)
-  public ErrorResponse handleResponseStatusException(ResponseStatusException ex) {
-    return new ErrorResponse(DomainError.builder().message(ex.getMessage()).build());
-  }
-
   @ExceptionHandler(Exception.class)
   @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
   public ErrorResponse handleGenericException(Exception ex) {
+    log.error("A non expected error occurred: {}", ex.getMessage(), ex);
+
     return new ErrorResponse(DomainError.builder().message(ex.getMessage()).build());
   }
 
