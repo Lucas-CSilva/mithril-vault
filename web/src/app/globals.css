@@ -89,10 +89,6 @@
    Base Styles
    ============================================================================ */
 
-* {
-  border-color: var(--nord-2);
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
