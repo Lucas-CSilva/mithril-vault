@@ -1,3 +1,6 @@
+# Local development profile — set SPRING_PROFILES_ACTIVE=local in your IDE run configuration.
+# Security is fully open (no auth server required).
+
 logging:
   level:
     root: INFO

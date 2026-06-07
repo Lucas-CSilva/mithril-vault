@@ -1,0 +1,45 @@
+[versions]
+spring-boot              = "4.0.6"
+spotless                 = "7.0.4"
+mapstruct                = "1.6.3"
+lombok                   = "1.18.36"
+lombok-mapstruct-binding = "0.2.0"
+springdoc                = "3.0.3"
+testcontainers           = "2.0.5"
+
+[libraries]
+# ── Spring Boot Starters (version managed by BOM — no version needed) ─────────
+spring-boot-webflux          = { module = "org.springframework.boot:spring-boot-starter-webflux" }
+spring-boot-data-mongodb     = { module = "org.springframework.boot:spring-boot-starter-data-mongodb-reactive" }
+spring-boot-actuator         = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-security         = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-boot-oauth2-resource  = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
+spring-boot-validation       = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-devtools         = { module = "org.springframework.boot:spring-boot-devtools" }
+
+# ── Third-party (explicit versions — not covered by Spring BOM) ────────────────
+springdoc-webflux            = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui",   version.ref = "springdoc" }
+mapstruct-core               = { module = "org.mapstruct:mapstruct",                               version.ref = "mapstruct" }
+
+# ── Annotation Processors ──────────────────────────────────────────────────────
+lombok                       = { module = "org.projectlombok:lombok",                              version.ref = "lombok" }
+mapstruct-processor          = { module = "org.mapstruct:mapstruct-processor",                     version.ref = "mapstruct" }
+lombok-mapstruct-binding     = { module = "org.projectlombok:lombok-mapstruct-binding",            version.ref = "lombok-mapstruct-binding" }
+
+# ── Test (Spring Boot BOM entries — no version needed) ────────────────────────
+spring-boot-test             = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-testcontainers   = { module = "org.springframework.boot:spring-boot-testcontainers" }
+spring-security-test         = { module = "org.springframework.security:spring-security-test" }
+reactor-test                 = { module = "io.projectreactor:reactor-test" }
+junit-platform-launcher      = { module = "org.junit.platform:junit-platform-launcher" }
+
+
+# ── Testcontainers (explicit versions — not in Spring BOM under native platform()) ──
+testcontainers-bom     = { module = "org.testcontainers:testcontainers-bom",  version.ref = "testcontainers" }
+testcontainers-junit   = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainers-mongodb = { module = "org.testcontainers:testcontainers-mongodb",       version.ref = "testcontainers" }
+
+
+[plugins]
+spring-boot = { id = "org.springframework.boot",  version.ref = "spring-boot" }
+spotless    = { id = "com.diffplug.spotless",      version.ref = "spotless" }

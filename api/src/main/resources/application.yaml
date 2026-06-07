@@ -1,10 +1,11 @@
 spring:
   webflux:
     base-path: /api/mithril-vault
+    codecs:
+      max-in-memory-size: 16MB
 
-  data:
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://root:root@localhost:27017/mithril_vault?authSource=admin}
+  mongodb:
+      uri: mongodb://root:root@localhost:27017/mithril_vault?authSource=admin&replicaSet=rs0
       connection-pool:
         min-size: 10
         max-size: 100
@@ -14,7 +15,6 @@ spring:
 
 springdoc:
   show-actuator: true
-
   swagger-ui:
     path: /swagger-ui.html
 
@@ -24,27 +24,33 @@ management:
       exposure:
         include: health,info
       base-path: /actuator
-
   endpoint:
     health:
       show-details: when-authorized
-
   health:
-    mongodb:
+    mongo:
       enabled: true
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: 8080
 
 logging:
   level:
-    root: ${LOG_LEVEL:INFO}
-    org.springframework.web: ${LOG_LEVEL:INFO}
-    org.mongodb.driver: ${LOG_LEVEL:INFO}
-    com.mithrilvault.api: ${LOG_LEVEL:INFO}
+    root: INFO
+    org.springframework.web: INFO
+    org.mongodb.driver: INFO
+    com.mithrilvault.api: INFO
 
 app:
   cors:
     allowed-origins:
       - http://localhost:3000
       - http://127.0.0.1:3000
+  security:
+    public-paths:
+      - /actuator/health
+      - /actuator/info
+      - /swagger-ui.html
+      - /swagger-ui/**
+      - /v3/api-docs/**
+      - /webjars/**

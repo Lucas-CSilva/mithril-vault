@@ -1,13 +1,18 @@
+import org.springframework.boot.gradle.plugin.SpringBootPlugin
+
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.+'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id 'com.diffplug.spotless' version '6.25.0'
+	alias(libs.plugins.spring.boot)
+	alias(libs.plugins.spotless)
 }
 
-group = 'com.mithrilvault'
+group   = 'com.mithrilvault'
 version = '0.0.1-SNAPSHOT'
 description = 'Reactive API for Mithril Vault'
+
+// ─────────────────────────────────────────────
+// Java toolchain
+// ─────────────────────────────────────────────
 
 java {
 	toolchain {
@@ -15,50 +20,80 @@ java {
 	}
 }
 
+// ─────────────────────────────────────────────
+// Code style
+// ─────────────────────────────────────────────
+
 spotless {
 	java {
 		googleJavaFormat()
 		removeUnusedImports()
 		endWithNewline()
+		trimTrailingWhitespace()
 	}
 }
 
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-
-repositories {
-	mavenCentral()
-}
+// ─────────────────────────────────────────────
+// Dependencies
+// ─────────────────────────────────────────────
 
 dependencies {
-	// --- Production Dependencies ---
-	implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2+'
 
-	// --- Tools (Lombok, Mapstruct, DevTools) ---
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	def bom = platform(SpringBootPlugin.BOM_COORDINATES)
+	implementation         bom
+	annotationProcessor    bom
+	testImplementation     bom
+	developmentOnly        bom
 
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation platform(libs.testcontainers.bom)
 
-	implementation 'org.mapstruct:mapstruct:1.6.3'
-	annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+	// ── Production ────────────────────────────
+	implementation libs.spring.boot.webflux
+	implementation libs.spring.boot.data.mongodb
+	implementation libs.spring.boot.actuator
+	implementation libs.spring.boot.security
+	implementation libs.spring.boot.oauth2.resource
+	implementation libs.spring.boot.validation
+	implementation libs.springdoc.webflux
+	implementation libs.mapstruct.core
 
-	// --- Test Dependencies (FIXED) ---
-	// The main test starter (includes JUnit 5, Mockito, WebTestClient, AssertJ, etc.)
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	// ── Development ───────────────────────────
+	developmentOnly libs.spring.boot.devtools
 
-	// Essential for testing Reactive streams (StepVerifier)
-	testImplementation 'io.projectreactor:reactor-test'
+	// ── Annotation Processors ─────────────────
+	compileOnly     libs.lombok
+	annotationProcessor libs.lombok
+	annotationProcessor libs.lombok.mapstruct.binding
+	annotationProcessor libs.mapstruct.processor
 
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	// ── Tests ─────────────────────────────────
+	testImplementation libs.spring.boot.test
+	testImplementation libs.spring.boot.testcontainers  // Spring Boot's Testcontainers integration (@ServiceConnection, etc.)
+	testImplementation libs.spring.security.test
+	testImplementation libs.reactor.test
+	testImplementation libs.testcontainers.junit
+	testImplementation libs.testcontainers.mongodb
+	testRuntimeOnly    libs.junit.platform.launcher
 }
+
+dependencyLocking {
+	lockAllConfigurations()
+}
+
+// ─────────────────────────────────────────────
+// Test configuration
+// ─────────────────────────────────────────────
 
 tasks.named('test') {
 	useJUnitPlatform()
+	exclude '**/*IT.class'
+	description = 'Runs unit tests (*Test).'
+}
+
+tasks.register('integrationTest', Test) {
+	useJUnitPlatform()
+	include '**/*IT.class'
+	shouldRunAfter test
+	description = 'Runs integration tests (*IT) with Testcontainers.'
+	group = 'verification'
 }
