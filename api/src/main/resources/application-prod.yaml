@@ -1,3 +1,13 @@
+spring:
+  mongodb:
+      uri: ${MONGODB_URI}
+      connection-pool:
+        min-size: 20
+        max-size: 200
+        max-wait-time: 3000ms
+        max-connection-life-time: 1h
+        max-connection-idle-time: 15m
+
 logging:
   level:
     root: WARN
@@ -21,16 +31,6 @@ server:
     mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
   http2:
     enabled: true
-
-spring:
-  data:
-    mongodb:
-      connection-pool:
-        min-size: 20
-        max-size: 200
-        max-wait-time: 3000ms
-        max-connection-life-time: 1h
-        max-connection-idle-time: 15m
 
 app:
   cors:

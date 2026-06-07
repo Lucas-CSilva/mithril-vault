@@ -1,2 +1,37 @@
+# --- IDEs & editors ---
+.idea/
 .vscode/
+*.iml
+*.ipr
+*.iws
+*.swp
+*.swo
+*~
+
+# --- OS noise ---
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+desktop.ini
+
+# --- Environment & secrets ---
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Git worktrees ---
+.worktrees/
+
+# --- Claude Code (commit shared config, ignore personal/local) ---
+**/settings.local.json
+.claude/*.local.json
+.claude/projects/
+
+# --- Logs & temp ---
+*.log
+logs/
+tmp/
+*.pid

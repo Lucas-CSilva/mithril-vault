@@ -13,19 +13,14 @@ public class CorsConfig implements WebFluxConfigurer {
 
   @Override
   public void addCorsMappings(CorsRegistry registry) {
+    String[] origins = appProperties.cors().allowedOrigins().toArray(String[]::new);
+
     registry
-        .addMapping("/api/**")
-        .allowedOrigins(appProperties.getAllowedOrigins())
+        .addMapping("/**")
+        .allowedOrigins(origins)
         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
         .allowedHeaders("*")
         .allowCredentials(true)
-        .maxAge(3600);
-
-    registry
-        .addMapping("/actuator/**")
-        .allowedOrigins(appProperties.getAllowedOrigins())
-        .allowedMethods("GET")
-        .allowedHeaders("*")
         .maxAge(3600);
   }
 }

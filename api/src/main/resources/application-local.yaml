@@ -1,0 +1,15 @@
+# Local development profile — set SPRING_PROFILES_ACTIVE=local in your IDE run configuration.
+# Security is fully open (no auth server required).
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.data.mongodb: DEBUG
+    org.mongodb.driver: INFO
+    com.mithrilvault.api: DEBUG
+
+management:
+  endpoint:
+    health:
+      show-details: always
