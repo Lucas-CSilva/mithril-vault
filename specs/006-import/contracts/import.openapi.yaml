@@ -1,0 +1,336 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Import API
+  version: "1.0.0"
+  description: |
+    CSV and OFX bank statement import. Two-step: parse (returns preview) then confirm (creates transactions).
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: import
+
+paths:
+
+  /import/parse:
+    post:
+      summary: Parse an uploaded file and return a preview
+      description: |
+        Accepts a multipart file upload. Auto-detects OFX; CSV requires a mapping
+        (via mappingId or inline columnMapping). Returns parsed rows with dedup flags
+        and category suggestions. Does NOT create any transactions.
+      operationId: parseImport
+      tags: [import]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, accountId]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or OFX file
+                accountId:
+                  type: string
+                  format: uuid
+                  description: Account to associate these transactions with
+                mappingId:
+                  type: string
+                  format: uuid
+                  description: Use a saved CSV mapping. Required for CSV if no columnMapping is provided.
+                columnMapping:
+                  $ref: "#/components/schemas/ColumnMappingConfig"
+                  description: Inline CSV mapping. Saved under sourceName if provided.
+                sourceName:
+                  type: string
+                  maxLength: 100
+                  description: Label for this import source. Used to save/reuse CSV column mappings.
+      responses:
+        "200":
+          description: Parsed preview rows
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportPreviewResponse"
+        "400":
+          description: Unrecognised file format or unparseable file
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /import/confirm:
+    post:
+      summary: Confirm selected rows and create transactions
+      description: |
+        Creates transactions for all approved rows. Idempotent: rows whose
+        importHash or FITID already exist are silently skipped (not re-created)
+        even if included — deduplication is enforced server-side.
+      operationId: confirmImport
+      tags: [import]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmImportCommand"
+      responses:
+        "200":
+          description: Import result summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResultResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /import/mappings:
+    get:
+      summary: List saved CSV column mappings
+      operationId: listImportMappings
+      tags: [import]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ImportMappingResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Save a CSV column mapping
+      operationId: createImportMapping
+      tags: [import]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateImportMappingCommand"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportMappingResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Source name already exists for this user
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /import/mappings/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    delete:
+      summary: Delete a saved CSV mapping
+      operationId: deleteImportMapping
+      tags: [import]
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ColumnMappingConfig:
+      type: object
+      required: [dateColumn, descriptionColumn, amountColumn, dateFormat, amountLocale, hasHeader, delimiter]
+      properties:
+        dateColumn:
+          type: string
+          description: Column name (if header row) or 0-based index
+        descriptionColumn:
+          type: string
+        amountColumn:
+          type: string
+        typeColumn:
+          type: string
+          nullable: true
+          description: Column that distinguishes DEBIT/CREDIT if not inferred from amount sign
+        dateFormat:
+          type: string
+          example: "dd/MM/yyyy"
+        amountLocale:
+          type: string
+          example: "pt-BR"
+        hasHeader:
+          type: boolean
+        delimiter:
+          type: string
+          enum: [",", ";"]
+
+    CreateImportMappingCommand:
+      allOf:
+        - $ref: "#/components/schemas/ColumnMappingConfig"
+        - type: object
+          required: [sourceName]
+          properties:
+            sourceName:
+              type: string
+              maxLength: 100
+
+    ImportPreviewResponse:
+      type: object
+      required: [rows, totalRows, duplicateCount]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportPreviewRow"
+        totalRows:
+          type: integer
+        duplicateCount:
+          type: integer
+          description: Number of rows flagged as probable duplicates
+
+    ImportPreviewRow:
+      type: object
+      required: [rowId, date, description, amount, type, isDuplicate, isSelected]
+      properties:
+        rowId:
+          type: string
+          description: Temporary identifier for this row (used in confirm step)
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        amount:
+          type: integer
+          format: int64
+          description: Centavos
+        type:
+          type: string
+          enum: [DEBIT, CREDIT]
+        isDuplicate:
+          type: boolean
+          description: true if importHash or FITID already exists for this user
+        isSelected:
+          type: boolean
+          description: Pre-set to false for duplicates; true for all others. Frontend can override.
+        suggestedCategoryId:
+          type: string
+          format: uuid
+          nullable: true
+
+    ConfirmImportCommand:
+      type: object
+      required: [accountId, rows]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfirmImportRow"
+
+    ConfirmImportRow:
+      type: object
+      required: [rowId]
+      properties:
+        rowId:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Category override from user review
+
+    ImportResultResponse:
+      type: object
+      required: [created, skipped]
+      properties:
+        created:
+          type: integer
+          description: Number of transactions actually created
+        skipped:
+          type: integer
+          description: Number of rows skipped (duplicates or not selected)
+
+    ImportMappingResponse:
+      type: object
+      required: [id, sourceName]
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceName:
+          type: string
+        dateColumn:
+          type: string
+        descriptionColumn:
+          type: string
+        amountColumn:
+          type: string
+        dateFormat:
+          type: string
+        delimiter:
+          type: string
+        hasHeader:
+          type: boolean
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

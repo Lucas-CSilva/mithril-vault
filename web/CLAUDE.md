@@ -12,20 +12,18 @@ src/
 ├── app/            # Next.js App Router — ROUTING ONLY. Pages delegate to features. No logic.
 │   ├── (auth)/     # public route group (login, register)
 │   ├── (app)/      # authenticated route group — gated by middleware.ts
-│   └── layout.tsx  # root providers: QueryClient, NotificationProvider, DI contexts
+│   └── layout.tsx  # root providers: QueryClient, NotificationProvider
 ├── features/       # Business verticals: accounts, cards, dashboard, investments,
 │   └── <name>/         planning, subscriptions. Self-contained:
 │       ├── components/  # feature-specific components (Server + Client)
 │       ├── hooks/       # React Query hooks (useAccounts, useCreateTransaction)
-│       ├── api.ts       # calls injected ApiClient port — NO raw fetch
+│       ├── api.ts       # calls core/services singleton — NO raw fetch
 │       ├── keys.ts      # query-key factory for this feature
 │       ├── types.ts     # hand-written, mirrors backend Records exactly
-│       ├── schema.ts    # zod form schemas (when the feature has forms)
-│       └── index.ts     # public surface — only these exports are importable
-├── core/           # Hexagonal infra
-│   ├── contexts/   # DI: provide port implementations to the tree
+│       └── schema.ts    # zod form schemas (when the feature has forms)
+├── core/           # Typed contracts + singleton implementations
 │   ├── ports/      # interfaces (ApiClient, AuthGateway, …)
-│   └── services/   # port implementations (HttpApiClient, …)
+│   └── services/   # singleton implementations (httpApiClient, …) — imported directly
 └── shared/         # Pure UI + utils, NO domain knowledge
     ├── components/ui/   # shadcn primitives (alias @/shared/components/ui)
     ├── hooks/
@@ -35,23 +33,22 @@ src/
 
 **Import boundaries:**
 - `app/` → `features/`, `core/`, `shared/`, Next APIs.
-- `features/` → `core/` (via ports), `shared/`, React.
+- `features/` → `core/` (ports + services), `shared/`, React.
 - `core/` → `shared/` + external libs + React.
 - `shared/` → React + Tailwind only (no `core/`, no `features/`).
 - **Forbidden:** `core/` or `shared/` importing `features/`; one `features/` importing another
-  (extract to `shared/` instead). Enforced via ESLint `eslint-plugin-boundaries` /
-  `import/no-restricted-paths`.
+  (extract to `shared/` instead). Enforced via `eslint-plugin-boundaries` — this is what makes
+  the boundaries real. No `index.ts` barrel files needed; the lint rule owns encapsulation.
 
-## Core hexagon — ports, services, DI
+## Core — ports and services
 
-Features depend on **ports** (interfaces in `core/ports`), never on concrete services or `fetch`.
+Features call `api.ts`, which imports singleton services from `core/services`. No context providers, no DI container.
 
-- **Ports:** `ApiClient` (typed HTTP), `AuthGateway` (login/refresh/logout), etc. No `I` prefix.
-- **Services:** `HttpApiClient` in `core/services` wraps `fetch` with base URL, JSON,
-  `credentials: 'include'`, and centralized error/401 handling (see Auth below).
-- **DI:** a `core/contexts` provider injects the implementation; hooks/components read the port
-  via context. A feature **MUST NOT** `new` a service or call `fetch` directly — that's a lint
-  error (`eslint-plugin-boundaries`). This keeps slices testable with a fake `ApiClient`.
+- **Ports** (`core/ports`): TypeScript interfaces — `ApiClient`, `AuthGateway`, etc. No `I` prefix.
+- **Services** (`core/services`): singleton implementations exported as module-level instances —
+  `httpApiClient` wraps `fetch` with base URL, JSON, `credentials: 'include'`, and centralized
+  error/401 handling (see Auth below). Import directly: `import { httpApiClient } from '@/core/services/httpApiClient'`.
+- A feature **MUST NOT** call `fetch` directly — that is a lint error. All HTTP goes through `api.ts` → `core/services`.
 
 ## React / Next.js
 
@@ -70,7 +67,7 @@ Features depend on **ports** (interfaces in `core/ports`), never on concrete ser
   `accountKeys.all = ['accounts'] as const`, `accountKeys.detail(id) = ['accounts', id] as const`.
   Never hand-build key arrays inline in a component.
 - **Hook naming:** reads `use<Plural>()` / `use<Entity>(id)`; mutations `use<Verb><Entity>()`
-  (`useCreateTransaction`). Feature hooks call `api.ts`, which calls the injected `ApiClient`.
+  (`useCreateTransaction`). Feature hooks call `api.ts`, which calls the `core/services` singleton.
 - **Invalidation discipline:** a mutation invalidates **every** query it affects, including
   cross-feature. A transaction write invalidates transactions **and** account balances, the
   relevant budget(s), and the dashboard. Derived reads are **refetched, never hand-patched**

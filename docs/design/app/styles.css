@@ -1,0 +1,146 @@
+/* ============================================================
+   Mithril Vault — Quiet-luxury Nord design system
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..800;1,400..600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---- Nord, refined ---------------------------------------- */
+  /* Snow Storm canvas — cooler, softer than raw Nord */
+  --bg:          #F3F5F9;
+  --bg-tint:     #EEF1F6;
+  --surface:     #FFFFFF;
+  --surface-2:   #F6F8FB;
+  --surface-3:   #ECEFF4;
+
+  /* Polar Night ink */
+  --ink:         #2E3440;
+  --ink-2:       #434C5E;
+  --ink-3:       #6A7382;
+  --ink-4:       #99A1B0;
+
+  /* Hairlines */
+  --line:        #E3E8F0;
+  --line-2:      #D8DEE9;
+  --line-strong: #CDD5E1;
+
+  /* Frost — primary accent family */
+  --frost-deep:  #5E81AC;
+  --frost:       #6C8DB5;
+  --frost-soft:  #81A1C1;
+  --frost-teal:  #88C0D0;
+  --frost-pine:  #8FBCBB;
+  --accent:      var(--frost-deep);
+
+  /* Aurora — money + status semantics (slightly deepened for AA on white) */
+  --pos:         #7E9F69;   /* credit / positive — Aurora green */
+  --pos-ink:     #5C7B49;
+  --pos-bg:      #EDF2E6;
+  --neg:         #BF616A;   /* debit / negative — Aurora red */
+  --neg-ink:     #A04852;
+  --neg-bg:      #F8ECEC;
+  --warn:        #C5854F;   /* Aurora orange */
+  --warn-bg:     #F8F0E6;
+  --gold:        #C9A85C;   /* Aurora yellow, muted */
+  --plum:        #A98AA3;   /* Aurora purple */
+
+  /* Accent washes */
+  --accent-bg:   #ECF1F7;
+  --accent-line: #D5E0EC;
+
+  /* Shadows — soft, layered, low alpha */
+  --sh-sm:  0 1px 2px rgba(46,52,64,.05), 0 1px 1px rgba(46,52,64,.04);
+  --sh-md:  0 2px 4px rgba(46,52,64,.04), 0 6px 16px rgba(46,52,64,.06);
+  --sh-lg:  0 4px 8px rgba(46,52,64,.05), 0 18px 40px rgba(46,52,64,.10);
+  --sh-xl:  0 8px 16px rgba(46,52,64,.06), 0 30px 60px rgba(46,52,64,.13);
+
+  /* Radii */
+  --r-xs: 7px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+
+  /* Type */
+  --sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --sidebar-w: 256px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+#root { height: 100%; }
+
+/* tabular figures everywhere by default for UI numbers */
+.num, .mono { font-feature-settings: 'tnum' 1, 'cv01' 1; }
+.mono { font-family: var(--mono); letter-spacing: -.01em; }
+
+/* Numbers in sans should still be tabular */
+body { font-feature-settings: 'tnum' 1; }
+
+::selection { background: var(--accent-bg); color: var(--frost-deep); }
+
+/* Scrollbar — quiet */
+* { scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--ink-4); background-clip: content-box; }
+
+/* ---- Reusable atoms ---------------------------------------- */
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-sm);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 3px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+/* Money coloring */
+.money-pos { color: var(--pos-ink); }
+.money-neg { color: var(--neg-ink); }
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+a { color: inherit; text-decoration: none; }
+
+.fade-in { animation: fadeIn .45s cubic-bezier(.22,.61,.36,1) both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

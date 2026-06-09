@@ -1,0 +1,353 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Accounts API
+  version: "1.0.0"
+  description: |
+    Account management. All accounts are tenant-scoped.
+    currentBalance is always derived (never stored) and included in every response.
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: accounts
+
+paths:
+
+  /accounts:
+    get:
+      summary: List all accounts for the authenticated user
+      description: Returns only active accounts by default. Use ?includeInactive=true to include deactivated ones.
+      operationId: listAccounts
+      tags: [accounts]
+      parameters:
+        - name: includeInactive
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Account list with derived currentBalance
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Create a new account
+      operationId: createAccount
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountCommand"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Account name already used by this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /accounts/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+
+    get:
+      summary: Get a single account with its current balance
+      operationId: getAccount
+      tags: [accounts]
+      responses:
+        "200":
+          description: Account detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      summary: Update account metadata
+      description: Cannot change type after creation. Cannot modify initialBalance directly (use reconcile endpoint).
+      operationId: updateAccount
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountCommand"
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    delete:
+      summary: Deactivate an account (soft delete)
+      description: |
+        Sets isActive = false. The account and all its transactions are preserved.
+        Deactivated accounts are hidden in the default UI view.
+      operationId: deactivateAccount
+      tags: [accounts]
+      responses:
+        "204":
+          description: Account deactivated
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /accounts/{id}/balance-history:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+
+    get:
+      summary: Get the daily closing balance history for an account
+      description: |
+        Returns the last 30 days of daily closing balance for the account, used to
+        render the balance sparkline on each account card.
+      operationId: getAccountBalanceHistory
+      tags: [accounts]
+      responses:
+        "200":
+          description: Daily closing balance points
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BalanceHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /accounts/{id}/reconcile:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+
+    post:
+      summary: Reconcile account balance
+      description: |
+        Accepts the user's real bank balance and the desired reconciliation method.
+        Method "ADJUSTING_TRANSACTION" creates a DEBIT or CREDIT labelled "Reconciliação".
+        Method "ADJUST_INITIAL_BALANCE" updates initialBalance directly.
+      operationId: reconcileAccount
+      tags: [accounts]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReconcileAccountCommand"
+      responses:
+        "200":
+          description: Account reconciled; returns updated account with new currentBalance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    AccountId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Account not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    CreateAccountCommand:
+      type: object
+      required: [name, type, initialBalance]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Nubank"
+        type:
+          type: string
+          enum: [CHECKING, SAVINGS, CASH, DIGITAL]
+          example: "DIGITAL"
+        institution:
+          type: string
+          maxLength: 100
+          example: "Nubank"
+        initialBalance:
+          type: integer
+          format: int64
+          description: Current real-world balance on the day of creation, in centavos. May be zero or negative.
+          example: 150090
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#88C0D0"
+
+    UpdateAccountCommand:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        institution:
+          type: string
+          maxLength: 100
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+
+    ReconcileAccountCommand:
+      type: object
+      required: [realBalance, method]
+      properties:
+        realBalance:
+          type: integer
+          format: int64
+          description: The actual balance from the user's bank statement, in centavos.
+          example: 148500
+        method:
+          type: string
+          enum: [ADJUSTING_TRANSACTION, ADJUST_INITIAL_BALANCE]
+          description: |
+            ADJUSTING_TRANSACTION: creates a labelled DEBIT/CREDIT transaction to cover the discrepancy.
+            ADJUST_INITIAL_BALANCE: directly updates initialBalance so derived currentBalance matches.
+
+    AccountResponse:
+      type: object
+      required: [id, name, type, initialBalance, currentBalance, isActive, createdAt]
+      description: Does not include ownerId (internal tenancy field, P6).
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [CHECKING, SAVINGS, CASH, DIGITAL]
+        institution:
+          type: string
+          nullable: true
+        initialBalance:
+          type: integer
+          format: int64
+          description: Centavos. Anchor balance at account creation / last reconciliation.
+        currentBalance:
+          type: integer
+          format: int64
+          description: Derived. Centavos. initialBalance + SUM(CREDIT) - SUM(DEBIT).
+          example: 148500
+        color:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    BalanceHistoryResponse:
+      type: object
+      required: [accountId, points]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        points:
+          type: array
+          description: Daily closing balance for the last 30 days, ordered by date ascending.
+          items:
+            $ref: "#/components/schemas/BalancePoint"
+
+    BalancePoint:
+      type: object
+      required: [date, balance]
+      properties:
+        date:
+          type: string
+          format: date
+          description: "Format: YYYY-MM-DD"
+        balance:
+          type: integer
+          format: int64
+          description: Centavos. Closing balance at end of this day.
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

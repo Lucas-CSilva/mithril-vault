@@ -1,0 +1,261 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Auth API
+  version: "1.0.0"
+  description: |
+    Authentication endpoints (public — no access token required).
+    Both tokens are transported as cookies only (P12, cookie-only transport).
+    The access token is set as an `httpOnly`, `Secure`, `SameSite=Strict` cookie
+    named `access_token` (~15 min); the refresh token is set as an `httpOnly`,
+    `Secure`, `SameSite=Strict` cookie named `refresh_token` (~30 days). No token
+    is ever returned in the response body.
+
+    NOTE — Rate limiting is DEFERRED / out of scope for the current build. The `429`
+    responses below are retained on the contract surface so clients can handle them if
+    rate limiting is introduced later, but no rate-limiting enforcement is implemented
+    for now.
+
+servers:
+  - url: /api/mithril-vault
+    description: Local / default
+
+tags:
+  - name: auth
+    description: Registration, login, token refresh, and logout
+
+paths:
+
+  /auth/register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created and authenticated
+          headers:
+            Set-Cookie:
+              description: |
+                Two cookies are set, both httpOnly, Secure, SameSite=Strict:
+                `access_token` (~15 min) and `refresh_token` (~30 days).
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: |
+            Rate limit exceeded. DEFERRED / not enforced in the current build —
+            retained on the contract surface only. See the API description note.
+
+  /auth/login:
+    post:
+      summary: Authenticate with email and password
+      operationId: loginUser
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Authenticated successfully
+          headers:
+            Set-Cookie:
+              description: |
+                Two cookies are set, both httpOnly, Secure, SameSite=Strict:
+                `access_token` (~15 min) and `refresh_token` (~30 days).
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: |
+            Rate limit exceeded. DEFERRED / not enforced in the current build —
+            retained on the contract surface only. See the API description note.
+
+  /auth/refresh:
+    post:
+      summary: Rotate refresh token and issue a new access token
+      description: |
+        Reads the `refresh_token` cookie. Validates it, rotates it (revokes the
+        presented token and issues a new one), and sets a fresh `access_token`
+        cookie. No token is returned in the response body. No request body is required.
+
+        Reuse detection: presenting an already-revoked refresh token is treated as a
+        theft indicator. The server revokes ALL refresh tokens for that user and
+        returns `401`, forcing re-login on every device.
+      operationId: refreshTokens
+      tags: [auth]
+      responses:
+        "200":
+          description: New token pair issued
+          headers:
+            Set-Cookie:
+              description: |
+                Two cookies are re-set, both httpOnly, Secure, SameSite=Strict:
+                a fresh `access_token` (~15 min) and a rotated `refresh_token` (~30 days).
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: |
+            Missing, expired, or revoked refresh token. Also returned when reuse
+            detection trips: a previously-rotated (revoked) token was replayed, so
+            all of the user's refresh tokens are revoked and re-login is required.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      summary: Revoke the current refresh token and clear the cookie
+      operationId: logoutUser
+      tags: [auth]
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Logged out; access_token and refresh_token cookies cleared
+          headers:
+            Set-Cookie:
+              description: Cleared access_token and refresh_token cookies (Max-Age=0)
+              schema:
+                type: string
+        "401":
+          description: Missing or invalid access token
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          example: "S3cur3P@ssword"
+        displayName:
+          type: string
+          maxLength: 100
+          example: "Lucas"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "S3cur3P@ssword"
+
+    AuthResponse:
+      type: object
+      required: [user]
+      description: |
+        Tokens are NOT returned in the body (P12, cookie-only transport). Both the
+        access token and refresh token are delivered as httpOnly cookies via Set-Cookie.
+        The body carries only the authenticated user profile, which the frontend needs
+        on login.
+      properties:
+        user:
+          $ref: "#/components/schemas/UserResponse"
+
+    UserResponse:
+      type: object
+      required: [id, email, status]
+      description: |
+        Safe public profile. Never includes passwordHash or internal fields.
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        displayName:
+          type: string
+          nullable: true
+          example: "Lucas"
+        status:
+          type: string
+          enum: [ACTIVE, DISABLED]
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-01-15T10:30:00Z"
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 422
+        error:
+          type: string
+          example: "Unprocessable Entity"
+        message:
+          type: string
+          example: "email: must be a well-formed email address"

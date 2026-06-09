@@ -1,0 +1,455 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Cards & Invoices API
+  version: "1.0.0"
+  description: |
+    Credit card and invoice lifecycle management.
+    Full PAN and CVV are never stored. Only last 4 digits are kept.
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: cards
+  - name: invoices
+
+paths:
+
+  /cards:
+    get:
+      summary: List credit cards
+      operationId: listCards
+      tags: [cards]
+      parameters:
+        - name: includeInactive
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CreditCardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Add a credit card
+      operationId: createCard
+      tags: [cards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCreditCardCommand"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /cards/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+
+    get:
+      summary: Get a credit card
+      operationId: getCard
+      tags: [cards]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      summary: Update a credit card
+      operationId: updateCard
+      tags: [cards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCreditCardCommand"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditCardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Deactivate a credit card (soft delete)
+      operationId: deactivateCard
+      tags: [cards]
+      responses:
+        "204":
+          description: Card deactivated
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /cards/{id}/invoices:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    get:
+      summary: List invoices for a card
+      operationId: listInvoicesForCard
+      tags: [invoices]
+      parameters:
+        - name: months
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 24, default: 5 }
+          description: How many months of invoices to return (most recent first)
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvoiceResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /invoices/{id}:
+    parameters:
+      - $ref: "#/components/parameters/InvoiceId"
+
+    get:
+      summary: Get invoice detail (with transactions)
+      operationId: getInvoice
+      tags: [invoices]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /invoices/{id}/close:
+    parameters:
+      - $ref: "#/components/parameters/InvoiceId"
+    post:
+      summary: Close an invoice (OPEN → CLOSED)
+      operationId: closeInvoice
+      tags: [invoices]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Invoice is not in OPEN status
+
+  /invoices/{id}/pay:
+    parameters:
+      - $ref: "#/components/parameters/InvoiceId"
+    post:
+      summary: Register invoice payment (CLOSED → PAID)
+      description: |
+        Atomically marks the invoice PAID and creates a DEBIT transaction
+        on the specified account. If amount is less than totalAmount, the
+        invoice is still marked PAID (partial payment — user manages this manually).
+      operationId: payInvoice
+      tags: [invoices]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PayInvoiceCommand"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Invoice is not in CLOSED status
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    CardId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    InvoiceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    CreateCreditCardCommand:
+      type: object
+      required: [name, institution, last4Digits, cardType, creditLimit, closingDay, dueDay]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        institution:
+          type: string
+          maxLength: 100
+        last4Digits:
+          type: string
+          pattern: "^[0-9]{4}$"
+        cardType:
+          type: string
+          enum: [PHYSICAL, VIRTUAL]
+        creditLimit:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Centavos
+        closingDay:
+          type: integer
+          minimum: 1
+          maximum: 28
+        dueDay:
+          type: integer
+          minimum: 1
+          maximum: 28
+        associatedAccountId:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+
+    UpdateCreditCardCommand:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        creditLimit:
+          type: integer
+          format: int64
+          minimum: 1
+        closingDay:
+          type: integer
+          minimum: 1
+          maximum: 28
+        dueDay:
+          type: integer
+          minimum: 1
+          maximum: 28
+        associatedAccountId:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+
+    PayInvoiceCommand:
+      type: object
+      required: [accountId]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+          description: Account to debit for this payment
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Centavos. Defaults to totalAmount if omitted.
+
+    CreditCardResponse:
+      type: object
+      required: [id, name, institution, last4Digits, cardType, creditLimit, closingDay, dueDay, isActive]
+      description: Does not include ownerId.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        institution:
+          type: string
+        last4Digits:
+          type: string
+        cardType:
+          type: string
+          enum: [PHYSICAL, VIRTUAL]
+        creditLimit:
+          type: integer
+          format: int64
+          description: Centavos
+        closingDay:
+          type: integer
+        dueDay:
+          type: integer
+        bestPurchaseDay:
+          type: integer
+          description: Derived: closingDay + 1. Day to buy to get maximum interest-free period.
+        associatedAccountId:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        currentOpenInvoiceTotal:
+          type: integer
+          format: int64
+          description: Derived. Centavos. Total of the current OPEN invoice.
+        availableLimit:
+          type: integer
+          format: int64
+          description: Derived. Centavos. creditLimit - currentOpenInvoiceTotal.
+
+    InvoiceResponse:
+      type: object
+      required: [id, creditCardId, referenceMonth, closingDate, dueDate, status, totalAmount]
+      description: Does not include ownerId.
+      properties:
+        id:
+          type: string
+          format: uuid
+        creditCardId:
+          type: string
+          format: uuid
+        referenceMonth:
+          type: string
+          example: "2026-06"
+        closingDate:
+          type: string
+          format: date
+        dueDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [OPEN, CLOSED, PAID]
+        totalAmount:
+          type: integer
+          format: int64
+          description: Derived. Centavos. Sum of all transactions in this invoice.
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        paidFromAccountId:
+          type: string
+          format: uuid
+          nullable: true
+
+    InvoiceDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/InvoiceResponse"
+        - type: object
+          properties:
+            transactions:
+              type: array
+              items:
+                $ref: "#/components/schemas/InvoiceTransactionSummary"
+
+    InvoiceTransactionSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        amount:
+          type: integer
+          format: int64
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+        installmentNumber:
+          type: integer
+          nullable: true
+        totalInstallments:
+          type: integer
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

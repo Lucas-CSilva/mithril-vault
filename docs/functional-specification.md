@@ -1,8 +1,13 @@
 # Mithril-Vault: Product Functional Specification
 
-> **Version:** 1.0
-> **Status:** Product Definition
+> **Version:** 1.1
+> **Status:** Reconciled with `docs/product-definition.md` v1.2
 > **Visual Theme:** Nord Theme (Light Mode / Snow Storm)
+>
+> **Scope note (v1.1):** The authoritative source for product scope is
+> `docs/product-definition.md` (v1.2). Where this document previously described investment
+> asset classes beyond **fixed income (renda fixa)** — equities, REITs, crypto — those are
+> **future scope**, not active MVP requirements. See Module 5 below.
 
 ## 1. Product Vision
 Mithril-Vault is designed to serve as the user's definitive financial source of truth. It transforms raw transactional data into a coherent financial narrative, enabling users to understand their historical data, control current activities, and plan for future objectives. The system operates as a comprehensive financial management ecosystem, prioritizing clarity, security, and a holistic view of the user's net worth.
@@ -71,14 +76,26 @@ Proactive financial control tools.
     * Visual progress alerts (Warning colors upon reaching 80%/100% of the cap).
 
 ### Module 5: Investment Hub
-Consolidated view of assets beyond the checking account.
+Consolidated view of **fixed-income (renda fixa)** positions held beyond the checking account.
+
+> **MVP scope — fixed income only.** The MVP tracks renda fixa instruments only (CDB, Tesouro
+> Direto, LCI/LCA, CRI/CRA, debêntures). See `docs/product-definition.md` §Investment
+> (Investimento — Renda Fixa) and Module 5 for the authoritative field set and calculations.
 
 * **Aggregated Portfolio:**
-    * Segmentation by asset class: Fixed Income, Equities, REITs, Crypto.
-* **Net Worth Evolution:**
-    * Area chart displaying the growth of Net Worth over time.
+    * Total invested, total gross value, total estimated IR, total net value, and gross/net
+      yield, with a breakdown by fixed-income type (CDB, Tesouro, LCI/LCA, etc.).
 * **Position Detailing:**
-    * Monitoring of Average Price, Current Value, and Variance (Profit/Loss).
+    * Per-position view: invested amount, current gross value (user-updated), gross yield,
+      estimated IR (regressive table), estimated net value, rate, liquidity, and time held /
+      time to maturity.
+* **Upcoming Maturities:**
+    * Highlights fixed-income positions maturing in the near term.
+
+> **Future scope (not in MVP):** other asset classes — equities, REITs (FIIs), and crypto —
+> together with average-price tracking and realized/unrealized profit-and-loss (P&L), and a
+> consolidated net-worth-evolution chart. These are intentionally deferred and are **not**
+> active requirements for the current build.
 
 ### Module 6: Subscription Management
 Control over recurring economy expenditures.
