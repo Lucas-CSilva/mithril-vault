@@ -178,7 +178,7 @@ PITest interacts poorly with reactive chains.)
   (multi-user). Auth: short-lived access JWT (~15 min) + rotating refresh token in an `httpOnly`,
   `Secure`, `SameSite` cookie (~30 day).
 - All endpoints require a valid access token **except** the documented public set:
-  `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `/actuator/health`,
+  `POST /register`, `POST /login`, `POST /refresh`, `/actuator/health`,
   `/actuator/info`, and the OpenAPI/Swagger paths. This set **MUST** match the application
   security config exactly.
 - Rate-limiting on auth endpoints is **deferred** (out of scope for MVP). CORS restricted to known frontend origins.
@@ -332,7 +332,7 @@ reuse goes through `shared` or a `core` port — never a deep import into anothe
   `localStorage`/JS-readable storage. The `ApiClient` sends `credentials: 'include'`; RSC fetches
   forward the incoming cookies.
 - **401 handling is centralized in the `ApiClient`:** on a 401 it attempts a single
-  `POST /auth/refresh` and retries once; a failed refresh clears session and redirects to login.
+  `POST /refresh` and retries once; a failed refresh clears session and redirects to login.
   Features never implement refresh logic.
 - **Route gating** is done in Next.js `middleware.ts` for the `(app)` group (redirect
   unauthenticated users to login) — defense in depth on top of the API's own authz (P2); the
@@ -372,7 +372,7 @@ Exact versions live in the tooling source of truth (`api/gradle/libs.versions.to
 ---
 
 ## 5. API & versioning
-- **No version in the URI.** Paths stay clean under the base path (`/api/mithril-vault/...`); the
+- **No version in the URI.** Paths stay clean under the base path (`/mithril-vault/...`); the
   URL identifies the resource, not its version. There is no `/v1/` path segment.
 - **Versioning, when needed, is negotiated via request header** — a media-type/`Accept` or a
   dedicated version header (e.g. `Accept: application/vnd.mithrilvault.v2+json` or

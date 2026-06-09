@@ -1,6 +1,12 @@
 # Local development profile — set SPRING_PROFILES_ACTIVE=local in your IDE run configuration.
 # Security is fully open (no auth server required).
 
+app:
+  jwt:
+    secret-key: local-dev-secret-not-used-security-is-open
+    access-token-ttl-seconds: 900
+    refresh-token-ttl-seconds: 2592000
+
 logging:
   level:
     root: INFO

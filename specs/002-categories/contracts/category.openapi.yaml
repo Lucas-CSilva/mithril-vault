@@ -7,7 +7,7 @@ info:
     User-defined categories are tenant-scoped. All endpoints require authentication.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

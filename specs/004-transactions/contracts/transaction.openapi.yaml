@@ -7,7 +7,7 @@ info:
     All monetary values are integers in centavos (1 BRL = 100 centavos).
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

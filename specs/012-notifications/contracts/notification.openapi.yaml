@@ -15,7 +15,7 @@ info:
     concern layered on top of this feed; this contract covers the durable feed only.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

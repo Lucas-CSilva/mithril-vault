@@ -1,6 +1,6 @@
 spring:
   webflux:
-    base-path: /api/mithril-vault
+    base-path: /mithril-vault
     codecs:
       max-in-memory-size: 16MB
 
@@ -30,6 +30,9 @@ management:
   health:
     mongo:
       enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
 
 server:
   port: 8080
@@ -54,3 +57,11 @@ app:
       - /swagger-ui/**
       - /v3/api-docs/**
       - /webjars/**
+      - /register
+      - /login
+      - /refresh
+      - /logout
+  jwt:
+    secret-key: ${JWT_SECRET_KEY:change-me-in-production-at-least-32-chars!!}
+    access-token-ttl-seconds: 900
+    refresh-token-ttl-seconds: 2592000

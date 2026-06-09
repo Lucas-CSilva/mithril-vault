@@ -148,7 +148,7 @@ dividing for percentages (see root `CLAUDE.md`). MongoDB stores `Int64`, never `
 
 Define the OpenAPI contract (`specs/[###-feature]/contracts/[resource].openapi.yaml`) and the
 MongoDB document schema (`specs/[###-feature]/data-model.md`, incl. `ownerId` indexes)
-**before** implementing. Endpoints live under the base path `/api/mithril-vault/...` with **no
+**before** implementing. Endpoints live under the base path `/mithril-vault/...` with **no
 version in the URI** — API versioning, if ever needed, is negotiated via request header (contract §5).
 
 ## Commands

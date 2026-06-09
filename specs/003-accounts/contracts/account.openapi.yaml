@@ -7,7 +7,7 @@ info:
     currentBalance is always derived (never stored) and included in every response.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

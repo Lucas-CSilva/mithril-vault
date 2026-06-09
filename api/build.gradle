@@ -56,6 +56,10 @@ dependencies {
 	implementation libs.spring.boot.validation
 	implementation libs.springdoc.webflux
 	implementation libs.mapstruct.core
+	implementation 'org.springframework.security:spring-security-oauth2-jose'
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	implementation 'io.micrometer:context-propagation'
+	implementation libs.logstash.logback.encoder
 
 	// ── Development ───────────────────────────
 	developmentOnly libs.spring.boot.devtools
@@ -68,11 +72,12 @@ dependencies {
 
 	// ── Tests ─────────────────────────────────
 	testImplementation libs.spring.boot.test
-	testImplementation libs.spring.boot.testcontainers  // Spring Boot's Testcontainers integration (@ServiceConnection, etc.)
+	testImplementation libs.spring.boot.testcontainers
 	testImplementation libs.spring.security.test
 	testImplementation libs.reactor.test
 	testImplementation libs.testcontainers.junit
 	testImplementation libs.testcontainers.mongodb
+	testImplementation libs.archunit.junit5
 	testRuntimeOnly    libs.junit.platform.launcher
 }
 

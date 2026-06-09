@@ -6,7 +6,7 @@ info:
     Monthly spending caps per category with real-time spentAmount aggregation.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

@@ -6,6 +6,8 @@ lombok                   = "1.18.36"
 lombok-mapstruct-binding = "0.2.0"
 springdoc                = "3.0.3"
 testcontainers           = "2.0.5"
+logstash-logback         = "8.1"
+archunit                 = "1.4.1"
 
 [libraries]
 # ── Spring Boot Starters (version managed by BOM — no version needed) ─────────
@@ -38,6 +40,12 @@ junit-platform-launcher      = { module = "org.junit.platform:junit-platform-lau
 testcontainers-bom     = { module = "org.testcontainers:testcontainers-bom",  version.ref = "testcontainers" }
 testcontainers-junit   = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 testcontainers-mongodb = { module = "org.testcontainers:testcontainers-mongodb",       version.ref = "testcontainers" }
+
+# ── Observability & Logging ────────────────────────────────────────────────────
+logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback" }
+
+# ── Architecture testing ───────────────────────────────────────────────────────
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 
 
 [plugins]

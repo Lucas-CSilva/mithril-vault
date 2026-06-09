@@ -6,7 +6,7 @@ info:
     CSV and OFX bank statement import. Two-step: parse (returns preview) then confirm (creates transactions).
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

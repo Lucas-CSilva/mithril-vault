@@ -29,23 +29,23 @@
 These must be in place before feature implementation begins.
 
 ### Backend
-- [ ] JWT infrastructure — `JwtProvider` (sign + verify), key config in `application.yaml`
-- [ ] Observability wiring (correlation IDs via Micrometer, see ADR-001) — add `micrometer-tracing-bridge-otel` (or `-brave`) + `context-propagation`; enable `Hooks.enableAutomaticContextPropagation()`; a `WebFilter` reads/generates the `X-Correlation-Id` request header, sets it on the current `Observation` and the response header. **No** `Mono.deferContextual` correlation-id plumbing in handlers — the trace context surfaces to logs via MDC (`traceId`/`spanId` → `correlationId`)
-- [ ] Structured JSON logging — Logback JSON encoder (`logstash-logback-encoder` or equivalent); log pattern includes the Micrometer-provided `traceId`/`correlationId` MDC keys
-- [ ] ArchUnit test suite — enforce P3 dependency rules (domain must not import application/infrastructure; application must not import infrastructure)
-- [ ] `AbstractIntegrationTest` ✅ (exists) — verify replica-set Testcontainers config is correct
+- [ x] JWT infrastructure — `JwtProvider` (sign + verify), key config in `application.yaml`
+- [ x] Observability wiring (correlation IDs via Micrometer, see ADR-001) — add `micrometer-tracing-bridge-otel` (or `-brave`) + `context-propagation`; enable `Hooks.enableAutomaticContextPropagation()`; a `WebFilter` reads/generates the `X-Correlation-Id` request header, sets it on the current `Observation` and the response header. **No** `Mono.deferContextual` correlation-id plumbing in handlers — the trace context surfaces to logs via MDC (`traceId`/`spanId` → `correlationId`)
+- [ x] Structured JSON logging — Logback JSON encoder (`logstash-logback-encoder` or equivalent); log pattern includes the Micrometer-provided `traceId`/`correlationId` MDC keys
+- [ x] ArchUnit test suite — enforce P3 dependency rules (domain must not import application/infrastructure; application must not import infrastructure)
+- [ x] `AbstractIntegrationTest` ✅ (exists) — verify replica-set Testcontainers config is correct
 
 ### Frontend
-- [ ] React Query `QueryClientProvider` wired in `app/layout.tsx`
-- [ ] `shared/types/Centavos.ts` — branded type, `centavos()` constructor, `formatBRL()`
-- [ ] `shared/utils/index.ts` — re-export `formatBRL`, date helpers, `cn`
-- [ ] `core/ports/ApiClient.ts` — typed HTTP interface (`get`, `post`, `put`, `patch`, `delete`)
-- [ ] `core/ports/AuthGateway.ts` — `login`, `register`, `refresh`, `logout` interface
-- [ ] `core/services/HttpApiClient.ts` — `fetch` wrapper; `credentials: 'include'`; centralized 401 → refresh → retry → redirect
-- [ ] `core/contexts/ApiClientProvider.tsx` — injects `HttpApiClient` implementation
-- [ ] ESLint `eslint-plugin-boundaries` config — enforce feature/core/shared import rules
-- [ ] `middleware.ts` — redirect unauthenticated users from `(app)` routes to `/login`
-- [ ] App shell — authenticated layout: navigation sidebar/header, notification bell placeholder
+- [ x] React Query `QueryClientProvider` wired in `app/layout.tsx`
+- [ x] `shared/types/Centavos.ts` — branded type, `centavos()` constructor, `formatBRL()`
+- [ x] `shared/utils/index.ts` — re-export `formatBRL`, date helpers, `cn`
+- [ x] `core/ports/ApiClient.ts` — typed HTTP interface (`get`, `post`, `put`, `patch`, `delete`)
+- [ x] `core/ports/AuthGateway.ts` — `login`, `register`, `refresh`, `logout` interface
+- [ x] `core/services/HttpApiClient.ts` — `fetch` wrapper; `credentials: 'include'`; centralized 401 → refresh → retry → redirect
+- [ x] `core/contexts/ApiClientProvider.tsx` — injects `HttpApiClient` implementation
+- [ x] ESLint `eslint-plugin-boundaries` config — enforce feature/core/shared import rules
+- [ x] `middleware.ts` — redirect unauthenticated users from `(app)` routes to `/login`
+- [ x] App shell — authenticated layout: navigation sidebar/header, notification bell placeholder
 
 ---
 
@@ -63,13 +63,13 @@ These must be in place before feature implementation begins.
 - [ ] `RegisterUserCommand` (email, rawPassword, displayName) + `RegisterUserCommandHandler` (email uniqueness check, BCrypt hash, persist)
 - [ ] `LoginCommand` (email, rawPassword) + `LoginCommandHandler` (credential validation, issue access JWT + rotating refresh token)
 - [ ] `RefreshCommand` (refresh token from cookie) + `RefreshCommandHandler` (validate, rotate, issue new pair)
-- [ ] Refresh token rotation — every `POST /auth/refresh` issues a new refresh token and invalidates the presented one (set `revokedAt`, link the new token via `replacedByTokenHash`)
+- [ ] Refresh token rotation — every `POST /refresh` issues a new refresh token and invalidates the presented one (set `revokedAt`, link the new token via `replacedByTokenHash`)
 - [ ] Refresh token reuse detection — if an already-revoked token is presented (theft indicator), revoke ALL refresh tokens for that `userId` and return `401`, forcing re-login
 - [ ] `LogoutCommand` + `LogoutCommandHandler` (invalidate refresh token)
 - [ ] `JwtProvider` in infrastructure (sign with RS256 or HS256; configurable secret/key)
 - [ ] `RefreshTokenDocument` — stored in Mongo with `tokenHash`, `userId`, `issuedAt`, `expiresAt`, `revokedAt` (nullable), `replacedByTokenHash` (nullable — links the rotation chain for reuse detection)
 - [ ] `UserDocument` + `UserMongoRepository`
-- [ ] `AuthController` — `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
+- [ ] `AuthController` — `POST /register`, `POST /login`, `POST /refresh`, `POST /logout`
 - [ ] Spring Security config — `SecurityConfig` updated: permit auth endpoints + Swagger paths; JWT resource server filter chain
 - [ ] `RegisterUserCommandHandlerTest` (unit) + `AuthControllerIT` (integration)
 - [ ] `RefreshCommandHandlerTest` — covers rotation and reuse detection (replaying a revoked token revokes all user tokens and yields `401`)

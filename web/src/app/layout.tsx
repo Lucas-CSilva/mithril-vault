@@ -1,3 +1,5 @@
+import QueryProvider from "@/shared/components/QueryProvider";
+
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
@@ -29,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background text-foreground min-h-screen antialiased">
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
