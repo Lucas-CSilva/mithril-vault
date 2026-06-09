@@ -1,0 +1,310 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Dashboard API
+  version: "1.0.0"
+  description: |
+    Single endpoint returning all dashboard data for the authenticated user.
+    All values are derived aggregations — nothing is stored specifically for the dashboard.
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: dashboard
+
+paths:
+
+  /dashboard:
+    get:
+      summary: Get the full dashboard for the authenticated user
+      description: |
+        Returns Saldo Líquido, KPI cards, expense distribution, obligation radar,
+        and budget progress for the current month.
+        Cash flow chart data is fetched separately via /dashboard/cash-flow.
+      operationId: getDashboard
+      tags: [dashboard]
+      parameters:
+        - name: month
+          in: query
+          required: false
+          description: |
+            Reference month in `YYYY-MM` format, selected via the global topbar
+            month selector. Defaults to the current month when omitted.
+          schema:
+            type: string
+            pattern: "^[0-9]{4}-[0-9]{2}$"
+            example: "2026-06"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /dashboard/cash-flow:
+    get:
+      summary: Get cash flow chart data
+      description: Total liquid balance per day for the requested period.
+      operationId: getCashFlow
+      tags: [dashboard]
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [7D, 30D, 12M]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CashFlowResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    DashboardResponse:
+      type: object
+      required: [saldoLiquido, kpi, expenseDistribution, obligations, budgets, referenceMonth]
+      properties:
+        referenceMonth:
+          type: string
+          example: "2026-06"
+          description: The calendar month these KPIs refer to (current month)
+        saldoLiquido:
+          type: integer
+          format: int64
+          description: Centavos. Total liquid balance minus open invoice totals.
+          example: 1234567
+        contasAtivasTotal:
+          type: integer
+          format: int64
+          description: |
+            Centavos. Gross sum of all active account balances before invoice
+            deductions. Hero section figure.
+          example: 1500000
+        openInvoicesTotal:
+          type: integer
+          format: int64
+          description: |
+            Centavos. Total of open credit card invoices. Subtracted from
+            contasAtivasTotal to produce saldoLiquido.
+          example: 265433
+        saldoLiquidoDeltaPercentage:
+          type: number
+          format: double
+          nullable: true
+          description: |
+            Month-over-month percentage change in saldoLiquido versus the previous
+            month. Null for the first month with data (no prior month to compare).
+          example: 4.2
+        kpi:
+          $ref: "#/components/schemas/KpiSummary"
+        expenseDistribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExpenseCategorySlice"
+        obligations:
+          type: array
+          description: Sorted by dueDate ascending.
+          items:
+            $ref: "#/components/schemas/ObligationItem"
+        budgets:
+          type: array
+          items:
+            $ref: "#/components/schemas/BudgetProgress"
+
+    KpiSummary:
+      type: object
+      required: [receitas, despesas, investido, saldoDoMes]
+      properties:
+        receitas:
+          type: integer
+          format: int64
+          description: Centavos. Total CREDIT transactions this month (excl. transfers).
+        despesas:
+          type: integer
+          format: int64
+          description: Centavos. Total DEBIT transactions this month (excl. transfers and invoice payments).
+        investido:
+          type: integer
+          format: int64
+          description: Centavos. Total investment-category DEBIT transactions this month.
+        saldoDoMes:
+          type: integer
+          format: int64
+          description: Centavos. receitas - despesas.
+        receitasTrend:
+          type: array
+          minItems: 8
+          maxItems: 8
+          description: |
+            Centavos. Sparkline series for the receitas KPI card. Exactly 8 points
+            representing the last 8 periods (daily for the 7d/30d context).
+          items:
+            type: integer
+            format: int64
+        despesasTrend:
+          type: array
+          minItems: 8
+          maxItems: 8
+          description: |
+            Centavos. Sparkline series for the despesas KPI card. Exactly 8 points
+            representing the last 8 periods (daily for the 7d/30d context).
+          items:
+            type: integer
+            format: int64
+        investidoTrend:
+          type: array
+          minItems: 8
+          maxItems: 8
+          description: |
+            Centavos. Sparkline series for the investido no mês KPI card. Exactly 8
+            points representing the last 8 periods (daily for the 7d/30d context).
+          items:
+            type: integer
+            format: int64
+        saldoTrend:
+          type: array
+          minItems: 8
+          maxItems: 8
+          description: |
+            Centavos. Sparkline series for the saldo do mês KPI card. Exactly 8
+            points representing the last 8 periods (daily for the 7d/30d context).
+          items:
+            type: integer
+            format: int64
+
+    ExpenseCategorySlice:
+      type: object
+      required: [categoryId, categoryName, amount, percentage]
+      properties:
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        amount:
+          type: integer
+          format: int64
+          description: Centavos
+        percentage:
+          type: number
+          format: double
+          description: 0–100
+
+    ObligationItem:
+      type: object
+      required: [id, name, type, amount, dueDate, daysUntilDue, urgency]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: 'Fatura [card name] or subscription name'
+        type:
+          type: string
+          enum: [INVOICE, SUBSCRIPTION]
+        amount:
+          type: integer
+          format: int64
+          description: Centavos
+        dueDate:
+          type: string
+          format: date
+        daysUntilDue:
+          type: integer
+          description: 0 = due today
+        urgency:
+          type: string
+          enum: [GREEN, YELLOW, RED]
+          description: "GREEN: >5 days. YELLOW: 3-5 days. RED: <=2 days."
+
+    BudgetProgress:
+      type: object
+      required: [budgetId, categoryId, categoryName, limitAmount, spentAmount, percentage]
+      properties:
+        budgetId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        limitAmount:
+          type: integer
+          format: int64
+          description: Centavos
+        spentAmount:
+          type: integer
+          format: int64
+          description: Centavos. Derived from transactions.
+        percentage:
+          type: number
+          format: double
+          description: 0–100+. Can exceed 100 if over budget.
+        status:
+          type: string
+          enum: [OK, WARNING, EXCEEDED]
+          description: "OK: <80%. WARNING: 80-99%. EXCEEDED: >=100%."
+
+    CashFlowResponse:
+      type: object
+      required: [period, points]
+      properties:
+        period:
+          type: string
+          enum: [7D, 30D, 12M]
+        points:
+          type: array
+          items:
+            $ref: "#/components/schemas/CashFlowPoint"
+
+    CashFlowPoint:
+      type: object
+      required: [date, balance]
+      properties:
+        date:
+          type: string
+          format: date
+        balance:
+          type: integer
+          format: int64
+          description: Centavos. Total liquid balance at end of this day.
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

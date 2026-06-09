@@ -1,0 +1,470 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Transactions API
+  version: "1.0.0"
+  description: |
+    Transaction management: manual entry, recurring, installments, transfers.
+    All monetary values are integers in centavos (1 BRL = 100 centavos).
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: transactions
+
+paths:
+
+  /transactions:
+    get:
+      summary: List transactions with filters
+      operationId: listTransactions
+      tags: [transactions]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: invoiceId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: type
+          in: query
+          schema: { type: string, enum: [DEBIT, CREDIT] }
+        - name: paymentMethod
+          in: query
+          schema: { type: string, enum: [PIX, TED, DOC, DEBIT_CARD, CREDIT_CARD, BOLETO, CASH, TRANSFER] }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+          description: "Inclusive. Format: YYYY-MM-DD"
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+          description: "Inclusive. Format: YYYY-MM-DD"
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 100 }
+          description: Text search on description (case-insensitive)
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        "200":
+          description: Paginated transaction list, sorted by date descending
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Create a transaction
+      description: |
+        Creates a single transaction (manual), a recurring series, a set of installments,
+        or a transfer (two-leg), depending on the `mode` field.
+      operationId: createTransaction
+      tags: [transactions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionCommand"
+      responses:
+        "201":
+          description: Transaction(s) created
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TransactionResponse"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/TransactionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Referenced account, invoice, or category not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /transactions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/TransactionId"
+
+    get:
+      summary: Get a single transaction
+      operationId: getTransaction
+      tags: [transactions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      summary: Update a transaction
+      description: |
+        For recurring transactions, use the editScope parameter to control whether
+        only this instance or all future instances are updated.
+      operationId: updateTransaction
+      tags: [transactions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTransactionCommand"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    delete:
+      summary: Delete a transaction
+      operationId: deleteTransaction
+      tags: [transactions]
+      parameters:
+        - name: deleteScope
+          in: query
+          schema:
+            type: string
+            enum: [THIS_ONLY, THIS_AND_FUTURE]
+            default: THIS_ONLY
+          description: For recurring series — delete only this instance or all forward instances.
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /transactions/suggest-category:
+    get:
+      summary: Suggest a category based on transaction description
+      description: Keyword-based suggestion, no ML. Returns null if no match found.
+      operationId: suggestCategory
+      tags: [transactions]
+      parameters:
+        - name: description
+          in: query
+          required: true
+          schema: { type: string, maxLength: 200 }
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categoryId:
+                    type: string
+                    format: uuid
+                    nullable: true
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TransactionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Transaction not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    CreateTransactionCommand:
+      type: object
+      required: [type, amount, date, description, mode]
+      properties:
+        mode:
+          type: string
+          enum: [SINGLE, RECURRING, INSTALLMENT, TRANSFER]
+          description: |
+            SINGLE: one transaction on one account or invoice.
+            RECURRING: generates instances up to 12 months ahead.
+            INSTALLMENT: N installments across N invoices (credit card only).
+            TRANSFER: two-leg DEBIT+CREDIT between two accounts.
+        type:
+          type: string
+          enum: [DEBIT, CREDIT]
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Centavos. Always positive.
+          example: 8990
+        date:
+          type: string
+          format: date
+          example: "2026-06-08"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 200
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+        paymentMethod:
+          type: string
+          enum: [PIX, TED, DOC, DEBIT_CARD, CREDIT_CARD, BOLETO, CASH, TRANSFER]
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Required when mode=SINGLE|RECURRING. Mutually exclusive with invoiceId.
+        invoiceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: For credit card transactions. Mutually exclusive with accountId.
+        creditCardId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Alternative to invoiceId. System assigns to the correct open invoice.
+        tags:
+          type: array
+          items: { type: string, maxLength: 50 }
+        notes:
+          type: string
+          maxLength: 500
+        recurring:
+          $ref: "#/components/schemas/RecurringConfig"
+        installment:
+          $ref: "#/components/schemas/InstallmentConfig"
+        transfer:
+          $ref: "#/components/schemas/TransferConfig"
+
+    RecurringConfig:
+      type: object
+      required: [frequency]
+      properties:
+        frequency:
+          type: string
+          enum: [WEEKLY, BIWEEKLY, MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL]
+        endDate:
+          type: string
+          format: date
+          nullable: true
+          description: Optional end date. If null, generates 12 months of instances.
+
+    InstallmentConfig:
+      type: object
+      required: [totalInstallments]
+      properties:
+        totalInstallments:
+          type: integer
+          minimum: 2
+          maximum: 48
+          description: Number of installments across consecutive invoices.
+
+    TransferConfig:
+      type: object
+      required: [destinationAccountId]
+      properties:
+        destinationAccountId:
+          type: string
+          format: uuid
+          description: Destination account for the CREDIT leg.
+        transferPairId:
+          type: string
+          format: uuid
+          description: Client-supplied idempotency key. If omitted, the server generates one.
+
+    UpdateTransactionCommand:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+          maxLength: 200
+        categoryId:
+          type: string
+          format: uuid
+        paymentMethod:
+          type: string
+          enum: [PIX, TED, DOC, DEBIT_CARD, CREDIT_CARD, BOLETO, CASH, TRANSFER]
+        tags:
+          type: array
+          items: { type: string }
+        notes:
+          type: string
+          maxLength: 500
+        editScope:
+          type: string
+          enum: [THIS_ONLY, THIS_AND_FUTURE]
+          default: THIS_ONLY
+          description: For recurring series. THIS_AND_FUTURE deletes and regenerates all forward instances.
+
+    TransactionResponse:
+      type: object
+      required: [id, type, amount, date, description]
+      description: Does not include ownerId.
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [DEBIT, CREDIT]
+        amount:
+          type: integer
+          format: int64
+          description: Centavos
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+        paymentMethod:
+          type: string
+          nullable: true
+        accountId:
+          type: string
+          format: uuid
+          nullable: true
+        invoiceId:
+          type: string
+          format: uuid
+          nullable: true
+        sourceName:
+          type: string
+          nullable: true
+          description: |
+            Display name of the originating account or card, embedded at write time.
+            Historical snapshot — never updated even if the account/card is later renamed.
+        sourceType:
+          type: string
+          enum: [ACCOUNT, CARD]
+          nullable: true
+          description: Whether the transaction was entered via a bank account or a credit card invoice.
+        tags:
+          type: array
+          items: { type: string }
+        notes:
+          type: string
+          nullable: true
+        isRecurring:
+          type: boolean
+        recurringSeriesId:
+          type: string
+          format: uuid
+          nullable: true
+        installmentSeriesId:
+          type: string
+          format: uuid
+          nullable: true
+        installmentNumber:
+          type: integer
+          nullable: true
+        totalInstallments:
+          type: integer
+          nullable: true
+        transferPairId:
+          type: string
+          format: uuid
+          nullable: true
+        importSource:
+          type: string
+          enum: [MANUAL, CSV, OFX]
+          nullable: true
+        isReconciliation:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    TransactionPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransactionResponse"
+        page:
+          type: integer
+        size:
+          type: integer
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

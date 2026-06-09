@@ -1,6 +1,6 @@
 # Mithril Vault — Architecture Contract
 
-**Version:** 1.2.0
+**Version:** 1.4.0
 **Status:** Authoritative engineering reference (the single source of truth for architecture).
 **Relationship to product:** `docs/product-definition.md` defines *what* we build.
 This contract defines *how*. One intentional divergence: the product was scoped single-user;
@@ -147,11 +147,12 @@ review confirming agreement. Workflow: schema → review → tests → implement
 
 ### P9 — Feature-Sliced + hexagonal frontend
 `app/` (routing only) → `features/<vertical>/` (self-contained: `components/`, `hooks/`,
-`types.ts`, `api.ts`, `index.ts`) → `core/` (`contexts/` for DI, `ports/`, `services/`) →
+`types.ts`, `api.ts`, `keys.ts`, `schema.ts`) → `core/` (`ports/`, `services/`) →
 `shared/` (`components/ui`, `hooks`, `utils`). Boundaries: `shared`/`core` **MUST NOT** import
-`features`; a feature **MUST NOT** import another feature (extract to `shared`). The frontend is
-hexagonal too: features depend on `core` **ports** (interfaces), never on concrete services.
-Full structure, ports, data-layer and auth conventions in §3; day-to-day guide in `web/CLAUDE.md`.
+`features`; a feature **MUST NOT** import another feature (extract to `shared`). Features depend
+on `core` **ports** (interfaces) and import `core/services` singletons directly — no context-based
+DI container. Encapsulation is enforced by `eslint-plugin-boundaries`, not by barrel `index.ts`
+files. Full structure, ports, data-layer and auth conventions in §3; day-to-day guide in `web/CLAUDE.md`.
 
 ### P10 — Styling: Nord theme, light mode
 Tailwind utilities only; built on shadcn/ui. No CSS-in-JS, no global CSS outside `globals.css`.
@@ -180,16 +181,26 @@ PITest interacts poorly with reactive chains.)
   `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`, `/actuator/health`,
   `/actuator/info`, and the OpenAPI/Swagger paths. This set **MUST** match the application
   security config exactly.
-- Rate-limit auth endpoints (e.g. 5/min/ip). CORS restricted to known frontend origins.
+- Rate-limiting on auth endpoints is **deferred** (out of scope for MVP). CORS restricted to known frontend origins.
 - Never store card PAN or CVV. Never commit or log secrets/tokens. Treat all input as untrusted;
   validate at the edge (`application`), enforce invariants in the `domain`.
 
 ### P13 — Observability
 - Structured JSON logging (Logback JSON encoder).
-- Request correlation IDs **MUST** propagate via the Reactor `Context`
-  (`Mono.deferContextual` / a `WebFilter` that writes the context), **not** thread-local MDC —
-  MDC silently breaks across reactor thread hops.
-- Health via Spring Boot Actuator. Metrics via Micrometer (Prometheus) when introduced.
+- Request correlation IDs **MUST** propagate via **Micrometer Observation / Micrometer Tracing**,
+  **not** hand-rolled Reactor `Context` writes (`Mono.deferContextual`) and **not** raw
+  thread-local MDC. Each request is wrapped in an `Observation` (the WebFlux server observation
+  auto-configured by Boot Actuator); Micrometer Tracing's context-propagation bridge carries the
+  trace/correlation id across reactor thread hops and exposes it to Logback via MDC keys
+  (`traceId`/`spanId`, surfaced as `correlationId`). Hand-managing the id in the Reactor `Context`
+  is forbidden — it duplicates machinery the observation stack already provides and silently drifts
+  from the trace context. See `ADR-001`.
+- Correlation IDs are **internal only** — they are not exposed in response headers or response bodies. The `correlationId` field is absent from `ErrorResponse` across all OpenAPI specs. Tracing remains fully functional server-side via Micrometer; the ID never leaves the system.
+- Reactor context propagation **MUST** be enabled globally
+  (`Hooks.enableAutomaticContextPropagation()`) so the observation/trace context is restored on
+  every operator hop without per-handler `deferContextual` plumbing.
+- Health via Spring Boot Actuator. Metrics via Micrometer (Prometheus) when introduced — the same
+  Micrometer core the tracing bridge builds on.
 
 ---
 
@@ -247,19 +258,17 @@ web/src/
 ├── app/                      # Next.js App Router — routing, layouts, RSC pages ONLY (no logic)
 │   ├── (auth)/               # public route group (login, register)
 │   ├── (app)/                # authenticated route group — gated by middleware
-│   └── layout.tsx            # root providers (QueryClient, NotificationProvider, DI)
+│   └── layout.tsx            # root providers (QueryClient, NotificationProvider)
 ├── features/<vertical>/      # accounts, transactions, budgets, invoices, dashboard, …
 │   ├── components/           # feature UI (Server + Client components)
 │   ├── hooks/                # React Query hooks (useAccounts, useCreateTransaction)
-│   ├── api.ts                # calls injected ApiClient port — NO raw fetch here
+│   ├── api.ts                # calls core/services directly — NO raw fetch here
 │   ├── keys.ts               # query-key factory for this feature
 │   ├── types.ts              # hand-written types mirroring backend Records
-│   ├── schema.ts             # zod form schemas (when the feature has forms)
-│   └── index.ts              # public surface of the slice (only these exports are importable)
+│   └── schema.ts             # zod form schemas (when the feature has forms)
 ├── core/
-│   ├── ports/                # interfaces: ApiClient, AuthGateway, Clock, … (the hexagon edge)
-│   ├── services/             # concrete implementations (fetch-based HttpApiClient, …)
-│   └── contexts/             # DI: provide port implementations to the tree
+│   ├── ports/                # interfaces: ApiClient, AuthGateway, … (typed contracts)
+│   └── services/             # singleton implementations (HttpApiClient, …) — imported directly
 └── shared/
     ├── components/ui/        # shadcn/ui primitives (@/shared/components/ui)
     ├── hooks/                # cross-feature hooks
@@ -272,16 +281,18 @@ above it; `core` may import `shared` only; a feature may import `core` + `shared
 another feature (promote shared code to `shared`); `app` wires features together. Cross-feature
 reuse goes through `shared` or a `core` port — never a deep import into another slice.
 
-### 3.1 Core hexagon — ports, services, DI
+### 3.1 Core — ports and services
 - **Ports** (`core/ports`) are TypeScript interfaces describing capabilities the app needs:
-  `ApiClient` (typed HTTP), `AuthGateway` (login/refresh/logout), etc. Features depend on these
-  interfaces, **never** on a concrete service or on `fetch`.
-- **Services** (`core/services`) implement the ports — e.g. `HttpApiClient` wraps `fetch` with
-  base URL, JSON, `credentials: 'include'`, and centralized error/401 handling (§3.4).
-- **DI** (`core/contexts`): a provider injects the chosen implementation; components/hooks read
-  the port via context. This keeps features testable (swap a fake `ApiClient`) and is the FE
-  analogue of constructor injection (P5). A feature **MUST NOT** `new` a service or call `fetch`
-  directly.
+  `ApiClient` (typed HTTP), `AuthGateway` (login/refresh/logout), etc. These are the typed
+  contracts features depend on — never on a concrete service or on `fetch` directly.
+- **Services** (`core/services`) implement the ports and are exported as module singletons —
+  e.g. `httpApiClient` (an `HttpApiClient` instance) wraps `fetch` with base URL, JSON,
+  `credentials: 'include'`, and centralized error/401 handling (§3.4). Features import the
+  singleton directly: `import { httpApiClient } from '@/core/services/httpApiClient'`.
+- **No context-based DI container.** There is no `core/contexts` provider chain. The single
+  `HttpApiClient` implementation is never swapped at runtime; React Query + MSW provides test
+  isolation without provider ceremony. A feature **MUST NOT** call `fetch` directly — that is
+  a lint error.
 
 ### 3.2 Types & money (hand-written, branded)
 - Each feature **hand-writes** its `types.ts` to mirror the backend response Records exactly —
@@ -307,7 +318,7 @@ reuse goes through `shared` or a `core` port — never a deep import into anothe
   e.g. `accountKeys.all = ['accounts']`, `accountKeys.detail(id) = ['accounts', id]`. Components
   **MUST NOT** hand-build key arrays inline.
 - **Hook naming:** reads `use<Plural>()` / `use<Entity>(id)`; mutations `use<Verb><Entity>()`
-  (`useCreateTransaction`). Feature hooks call `api.ts` (which calls the `ApiClient` port).
+  (`useCreateTransaction`). Feature hooks call `api.ts` (which calls the `core/services` singleton).
 - **Invalidation discipline (MUST):** a mutation declares **every** query its write affects,
   including cross-feature ones. A transaction create/edit invalidates transactions **and**
   account balances, the relevant budget(s), and the dashboard. Derived reads are never patched
@@ -339,8 +350,9 @@ reuse goes through `shared` or a `core` port — never a deep import into anothe
   toast calls.
 
 ### 3.6 Enforcement (frontend)
-- `eslint-plugin-boundaries` enforces the import rules above; raw `fetch` inside `features` is a
-  lint error (must go through the `ApiClient` port).
+- `eslint-plugin-boundaries` enforces the import rules above (including the no-cross-feature rule)
+  and makes barrel `index.ts` files unnecessary — encapsulation is the lint rule's job.
+  Raw `fetch` inside `features` is a lint error (must go through `api.ts` → `core/services`).
 - TypeScript `strict`; `any` is disallowed. Monetary fields must be `Centavos`, not `number`.
 - React Testing Library tests assert behavior (P11).
 

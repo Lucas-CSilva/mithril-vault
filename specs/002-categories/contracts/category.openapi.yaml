@@ -1,0 +1,236 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Categories API
+  version: "1.0.0"
+  description: |
+    Category management. System categories are global (ownerId = null) and read-only.
+    User-defined categories are tenant-scoped. All endpoints require authentication.
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: categories
+
+paths:
+
+  /categories:
+    get:
+      summary: List all categories visible to the caller
+      description: |
+        Returns the union of system categories (ownerId = null) and the caller's
+        own user-defined categories, including subcategories.
+      operationId: listCategories
+      tags: [categories]
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Create a user-defined category
+      operationId: createCategory
+      tags: [categories]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryCommand"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Duplicate category name for this user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /categories/{id}:
+    parameters:
+      - $ref: "#/components/parameters/CategoryId"
+
+    patch:
+      summary: Update a user-defined category
+      description: System categories cannot be updated (returns 403).
+      operationId: updateCategory
+      tags: [categories]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryCommand"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Cannot modify a system category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+    delete:
+      summary: Delete a user-defined category
+      description: |
+        All transactions categorised under this category (and any of its subcategories)
+        are atomically reassigned to the system "Outros" category before deletion.
+        System categories cannot be deleted (returns 403).
+      operationId: deleteCategory
+      tags: [categories]
+      responses:
+        "204":
+          description: Category deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Cannot delete a system category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    CategoryId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Category not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    CreateCategoryCommand:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Pets"
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: If provided, creates a subcategory. The parent must exist and be accessible to the caller. Max depth = 1 (cannot create sub-subcategories).
+        icon:
+          type: string
+          maxLength: 50
+          example: "🐾"
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#A3BE8C"
+
+    UpdateCategoryCommand:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        icon:
+          type: string
+          maxLength: 50
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+
+    CategoryResponse:
+      type: object
+      required: [id, name, isSystem]
+      description: |
+        Safe category representation. Does not include ownerId (internal tenancy field).
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        isSystem:
+          type: boolean
+          description: true = global system category (read-only); false = user-defined
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

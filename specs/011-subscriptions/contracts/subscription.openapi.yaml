@@ -1,0 +1,487 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Subscriptions API
+  version: "1.0.0"
+  description: |
+    Recurring subscription management with full price history and auto-detection from imports.
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: subscriptions
+
+paths:
+
+  /subscriptions:
+    get:
+      summary: List subscriptions
+      operationId: listSubscriptions
+      tags: [subscriptions]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, PAUSED, CANCELLED]
+            description: Default returns ACTIVE and PAUSED.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Create a subscription
+      operationId: createSubscription
+      tags: [subscriptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSubscriptionCommand"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /subscriptions/cost-summary:
+    get:
+      summary: Get total cost summary for all active subscriptions
+      operationId: getSubscriptionCostSummary
+      tags: [subscriptions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionCostSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /subscriptions/suggestions:
+    get:
+      summary: Get auto-detected subscription suggestions from recent imports
+      operationId: getSubscriptionSuggestions
+      tags: [subscriptions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SubscriptionSuggestion"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /subscriptions/suggestions/{id}/dismiss:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      summary: Dismiss a subscription suggestion
+      operationId: dismissSubscriptionSuggestion
+      tags: [subscriptions]
+      responses:
+        "204":
+          description: Dismissed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /subscriptions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    get:
+      summary: Get a subscription with price history
+      operationId: getSubscription
+      tags: [subscriptions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionDetailResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      summary: Update a subscription
+      description: |
+        If amount changes, a new PriceEntry is appended (same-day: updates in place).
+        Metadata updates (nextChargeDate, cycle, paymentMethod) do not create new entries.
+      operationId: updateSubscription
+      tags: [subscriptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSubscriptionCommand"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /subscriptions/{id}/pause:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Pause a subscription
+      operationId: pauseSubscription
+      tags: [subscriptions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /subscriptions/{id}/resume:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Resume a paused subscription
+      operationId: resumeSubscription
+      tags: [subscriptions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /subscriptions/{id}/cancel:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Cancel a subscription
+      description: Status → CANCELLED. Kept in history for annual cost analysis.
+      operationId: cancelSubscription
+      tags: [subscriptions]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Subscription not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    CreateSubscriptionCommand:
+      type: object
+      required: [name, billingCycle, nextChargeDate, amount, categoryId, paymentMethod]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        billingCycle:
+          type: string
+          enum: [MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL]
+        nextChargeDate:
+          type: string
+          format: date
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Centavos. Initial price entry.
+        categoryId:
+          type: string
+          format: uuid
+        paymentMethod:
+          type: string
+          enum: [PIX, TED, DOC, DEBIT_CARD, CREDIT_CARD, BOLETO, CASH]
+        creditCardId:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          nullable: true
+          description: User-assigned display color (hex) for visual identification in the UI.
+          example: "#7B2FBE"
+        notes:
+          type: string
+          maxLength: 500
+        linkedTransactionPattern:
+          type: string
+          maxLength: 100
+
+    UpdateSubscriptionCommand:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        billingCycle:
+          type: string
+          enum: [MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL]
+        nextChargeDate:
+          type: string
+          format: date
+        amount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Centavos. If changed, appends a new PriceEntry.
+        categoryId:
+          type: string
+          format: uuid
+        paymentMethod:
+          type: string
+          enum: [PIX, TED, DOC, DEBIT_CARD, CREDIT_CARD, BOLETO, CASH]
+        creditCardId:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          nullable: true
+          description: User-assigned display color (hex) for visual identification in the UI.
+          example: "#7B2FBE"
+        notes:
+          type: string
+          maxLength: 500
+        linkedTransactionPattern:
+          type: string
+          maxLength: 100
+
+    SubscriptionResponse:
+      type: object
+      required: [id, name, billingCycle, nextChargeDate, currentAmount, monthlyEquivalentCost, status]
+      description: Does not include ownerId.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        billingCycle:
+          type: string
+          enum: [MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL]
+        nextChargeDate:
+          type: string
+          format: date
+        currentAmount:
+          type: integer
+          format: int64
+          description: Centavos. Price from the most recent PriceEntry.
+        monthlyEquivalentCost:
+          type: integer
+          format: int64
+          description: Derived. Centavos. currentAmount normalized to monthly.
+        categoryId:
+          type: string
+          format: uuid
+        paymentMethod:
+          type: string
+        creditCardId:
+          type: string
+          format: uuid
+          nullable: true
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          nullable: true
+          description: User-assigned display color (hex) for visual identification in the UI.
+          example: "#7B2FBE"
+        status:
+          type: string
+          enum: [ACTIVE, PAUSED, CANCELLED]
+        cancelledAt:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        daysUntilNextCharge:
+          type: integer
+          nullable: true
+          description: Null if status is not ACTIVE.
+        urgency:
+          type: string
+          enum: [GREEN, YELLOW, RED]
+          nullable: true
+          description: "GREEN: >5 days. YELLOW: 3-5 days. RED: <=2 days. Null if not ACTIVE."
+
+    SubscriptionDetailResponse:
+      allOf:
+        - $ref: "#/components/schemas/SubscriptionResponse"
+        - type: object
+          properties:
+            priceHistory:
+              type: array
+              items:
+                $ref: "#/components/schemas/PriceEntry"
+
+    PriceEntry:
+      type: object
+      required: [amount, validFrom]
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: Centavos
+        validFrom:
+          type: string
+          format: date
+
+    SubscriptionCostSummary:
+      type: object
+      required: [totalMonthlyCost, totalAnnualCost]
+      properties:
+        totalMonthlyCost:
+          type: integer
+          format: int64
+          description: Centavos. Sum of monthlyEquivalentCost for all ACTIVE subscriptions.
+        totalAnnualCost:
+          type: integer
+          format: int64
+          description: Centavos. totalMonthlyCost × 12.
+        biggestSubscription:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            monthlyEquivalentCost:
+              type: integer
+              format: int64
+        byCategory:
+          type: array
+          items:
+            type: object
+            properties:
+              categoryId:
+                type: string
+                format: uuid
+              categoryName:
+                type: string
+              totalMonthlyCost:
+                type: integer
+                format: int64
+              percentage:
+                type: number
+                format: double
+
+    SubscriptionSuggestion:
+      type: object
+      required: [suggestionId, description, amount, detectedCycle, occurrences]
+      properties:
+        suggestionId:
+          type: string
+          description: Temporary ID for dismissal
+        description:
+          type: string
+          description: Normalized transaction description that triggered the suggestion
+        amount:
+          type: integer
+          format: int64
+          description: Centavos
+        detectedCycle:
+          type: string
+          enum: [MONTHLY, BIMONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL, UNKNOWN]
+        occurrences:
+          type: integer
+          description: How many matching transactions were found
+        lastSeenDate:
+          type: string
+          format: date
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

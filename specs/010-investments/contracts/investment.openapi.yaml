@@ -1,0 +1,495 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Investments API
+  version: "1.0.0"
+  description: |
+    Fixed-income investment portfolio management.
+    All monetary values are integers in centavos.
+    Rates are integers × 100 (e.g. 11000 = 110.00% CDI).
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: investments
+
+paths:
+
+  /investments:
+    get:
+      summary: List investments
+      operationId: listInvestments
+      tags: [investments]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, MATURED, REDEEMED]
+            description: Default returns ACTIVE only
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvestmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    post:
+      summary: Add an investment
+      operationId: createInvestment
+      tags: [investments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvestmentCommand"
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /investments/portfolio:
+    get:
+      summary: Get portfolio summary
+      operationId: getPortfolio
+      tags: [investments]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioSummary"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /investments/portfolio/history:
+    get:
+      summary: Get monthly portfolio value evolution
+      description: |
+        Returns monthly portfolio gross value snapshots for the last 12 months,
+        used to render the portfolio value evolution chart.
+      operationId: getPortfolioHistory
+      tags: [investments]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PortfolioHistoryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /investments/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+
+    get:
+      summary: Get investment detail
+      operationId: getInvestment
+      tags: [investments]
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Delete an investment (only if status is ACTIVE and no linked transactions)
+      operationId: deleteInvestment
+      tags: [investments]
+      responses:
+        "204":
+          description: Deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /investments/{id}/update-value:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Update the current gross value
+      description: Appends a ValueEntry to the history. Does not change status.
+      operationId: updateInvestmentValue
+      tags: [investments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInvestmentValueCommand"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /investments/{id}/redeem:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      summary: Register investment redemption
+      description: |
+        Sets status to REDEEMED. Optionally creates a CREDIT transaction on the
+        destination account for the redeemed amount.
+      operationId: redeemInvestment
+      tags: [investments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedeemInvestmentCommand"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvestmentResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Investment is already REDEEMED or MATURED
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Investment not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    CreateInvestmentCommand:
+      type: object
+      required: [name, type, institution, investedAmount, rateType, rateValue, startDate, liquidityType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        type:
+          type: string
+          enum: [CDB, TESOURO_SELIC, TESOURO_IPCA, TESOURO_PREFIXADO, LCI, LCA, CRI, CRA, DEBENTURE]
+        institution:
+          type: string
+          maxLength: 100
+        investedAmount:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Centavos. Principal invested.
+        rateType:
+          type: string
+          enum: [CDI_PERCENTAGE, IPCA_PLUS, PREFIXADO, SELIC_PERCENTAGE]
+        rateValue:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Rate × 100. e.g. 11000 = 110.00% CDI; 650 = 6.50% a.a.
+        startDate:
+          type: string
+          format: date
+        maturityDate:
+          type: string
+          format: date
+          nullable: true
+        liquidityType:
+          type: string
+          enum: [DAILY, AT_MATURITY, SPECIFIC_DATE]
+        liquidityDate:
+          type: string
+          format: date
+          nullable: true
+          description: Required when liquidityType = SPECIFIC_DATE
+        isIRExempt:
+          type: boolean
+          default: false
+        registerDebitOnAccount:
+          type: boolean
+          default: false
+          description: If true, creates a DEBIT transaction on sourceAccountId for investedAmount
+        sourceAccountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Required when registerDebitOnAccount = true
+
+    UpdateInvestmentValueCommand:
+      type: object
+      required: [currentGrossValue]
+      properties:
+        currentGrossValue:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Centavos. New gross value.
+
+    RedeemInvestmentCommand:
+      type: object
+      required: [redeemedAt, redeemedAmount]
+      properties:
+        redeemedAt:
+          type: string
+          format: date
+        redeemedAmount:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Centavos. Actual net amount received.
+        registerCreditOnAccount:
+          type: boolean
+          default: false
+        destinationAccountId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Required when registerCreditOnAccount = true
+
+    InvestmentResponse:
+      type: object
+      required: [id, name, type, institution, investedAmount, currentGrossValue, status]
+      description: Does not include ownerId. Includes derived IR and net value estimates.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+        institution:
+          type: string
+        investedAmount:
+          type: integer
+          format: int64
+          description: Centavos
+        currentGrossValue:
+          type: integer
+          format: int64
+          description: Centavos
+        grossYield:
+          type: integer
+          format: int64
+          description: Derived. Centavos. currentGrossValue - investedAmount.
+        estimatedIR:
+          type: integer
+          format: int64
+          description: Derived. Centavos. 0 if isIRExempt.
+        netValue:
+          type: integer
+          format: int64
+          description: Derived. Centavos. currentGrossValue - estimatedIR.
+        grossYieldPercentage:
+          type: number
+          format: double
+          description: Derived. (grossYield / investedAmount) × 100.
+        netYieldPercentage:
+          type: number
+          format: double
+        rateType:
+          type: string
+        rateValue:
+          type: integer
+          format: int64
+          description: Rate × 100
+        rateDisplay:
+          type: string
+          description: Human-readable rate. e.g. "110,00% CDI", "IPCA + 6,50% a.a."
+        startDate:
+          type: string
+          format: date
+        maturityDate:
+          type: string
+          format: date
+          nullable: true
+        daysSinceStart:
+          type: integer
+          description: Derived.
+        daysToMaturity:
+          type: integer
+          nullable: true
+          description: Derived.
+        liquidityType:
+          type: string
+        liquidityDate:
+          type: string
+          format: date
+          nullable: true
+        isIRExempt:
+          type: boolean
+        status:
+          type: string
+          enum: [ACTIVE, MATURED, REDEEMED]
+        redeemedAt:
+          type: string
+          format: date
+          nullable: true
+        redeemedAmount:
+          type: integer
+          format: int64
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    PortfolioSummary:
+      type: object
+      required: [totalInvested, totalGrossValue, totalEstimatedIR, totalNetValue]
+      properties:
+        totalInvested:
+          type: integer
+          format: int64
+          description: Centavos. Sum of investedAmount for ACTIVE investments.
+        totalGrossValue:
+          type: integer
+          format: int64
+          description: Centavos.
+        totalEstimatedIR:
+          type: integer
+          format: int64
+          description: Centavos.
+        totalNetValue:
+          type: integer
+          format: int64
+          description: Centavos.
+        grossYieldPercentage:
+          type: number
+          format: double
+        netYieldPercentage:
+          type: number
+          format: double
+        byType:
+          type: array
+          items:
+            $ref: "#/components/schemas/PortfolioByType"
+        upcomingMaturities:
+          type: array
+          description: ACTIVE investments maturing in the next 90 days, sorted by maturityDate.
+          items:
+            $ref: "#/components/schemas/UpcomingMaturity"
+
+    PortfolioByType:
+      type: object
+      properties:
+        type:
+          type: string
+        totalNetValue:
+          type: integer
+          format: int64
+        percentage:
+          type: number
+          format: double
+
+    UpcomingMaturity:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        maturityDate:
+          type: string
+          format: date
+        netValue:
+          type: integer
+          format: int64
+
+    PortfolioHistoryResponse:
+      type: object
+      required: [points]
+      properties:
+        points:
+          type: array
+          description: Monthly gross value snapshots for the last 12 months, ordered by month ascending.
+          items:
+            $ref: "#/components/schemas/PortfolioHistoryPoint"
+
+    PortfolioHistoryPoint:
+      type: object
+      required: [month, totalGrossValue, totalNetValue]
+      properties:
+        month:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}$"
+          example: "2026-06"
+        totalGrossValue:
+          type: integer
+          format: int64
+          description: Centavos. Portfolio gross value at this month's snapshot.
+        totalNetValue:
+          type: integer
+          format: int64
+          description: Centavos. Portfolio net value at this month's snapshot.
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

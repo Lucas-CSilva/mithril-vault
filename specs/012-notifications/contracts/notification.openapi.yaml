@@ -1,0 +1,282 @@
+openapi: "3.0.3"
+info:
+  title: Mithril Vault — Notifications API
+  version: "1.0.0"
+  description: |
+    In-app notification feed. All notifications are tenant-scoped (P2): every notification
+    carries an internal ownerId (never exposed) and every read/write is scoped to the
+    authenticated caller.
+
+    Notifications are produced server-side by alert sources — budget threshold checks on
+    transaction save, and the daily scheduled jobs for invoices, subscriptions, and
+    investment maturity. There is no create endpoint: clients only list and mark-as-read.
+
+    Real-time delivery (the toast for budget alerts on transaction save) is a frontend
+    concern layered on top of this feed; this contract covers the durable feed only.
+
+servers:
+  - url: /api/mithril-vault
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: notifications
+
+paths:
+
+  /notifications:
+    get:
+      summary: List notifications for the authenticated user
+      description: |
+        Returns the caller's notifications, newest first. Supports filtering by read state
+        and by type. Always includes the current unread count so the bell badge can be
+        rendered from a single request.
+      operationId: listNotifications
+      tags: [notifications]
+      parameters:
+        - name: read
+          in: query
+          description: Filter by read state. Omit to return both read and unread.
+          schema:
+            type: boolean
+        - name: type
+          in: query
+          description: Filter by notification type. Omit to return all types.
+          schema:
+            $ref: "#/components/schemas/NotificationType"
+      responses:
+        "200":
+          description: Notification feed with unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/read-all:
+    patch:
+      summary: Mark all of the caller's unread notifications as read
+      description: |
+        Idempotent. Marks every unread notification owned by the caller as read and returns
+        how many were affected. Calling again when nothing is unread returns markedCount 0.
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      responses:
+        "200":
+          description: Bulk mark-as-read result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarkAllReadResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /notifications/{id}/read:
+    parameters:
+      - $ref: "#/components/parameters/NotificationId"
+    patch:
+      summary: Mark a single notification as read
+      description: |
+        Idempotent. Marking an already-read notification returns it unchanged. A notification
+        not owned by the caller returns 404 (existence is not leaked, P2).
+      operationId: markNotificationRead
+      tags: [notifications]
+      responses:
+        "200":
+          description: The updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    NotificationId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid access token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Notification not found or not owned by the caller
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    NotificationType:
+      type: string
+      description: |
+        The alert that produced the notification.
+        - BUDGET_THRESHOLD_80 / BUDGET_THRESHOLD_100: a budget crossed 80% / 100% of its
+          limit, triggered on transaction save.
+        - INVOICE_DUE_SOON: a credit-card invoice is due in ≤ 3 days (daily job).
+        - SUBSCRIPTION_CHARGE_UPCOMING: a subscription charges in ≤ 3 days (daily job).
+        - INVESTMENT_MATURITY_UPCOMING: an investment matures soon (daily job).
+      enum:
+        - BUDGET_THRESHOLD_80
+        - BUDGET_THRESHOLD_100
+        - INVOICE_DUE_SOON
+        - SUBSCRIPTION_CHARGE_UPCOMING
+        - INVESTMENT_MATURITY_UPCOMING
+
+    NotificationResponse:
+      type: object
+      description: Does not include ownerId (internal tenancy field, P6).
+      required: [id, type, message, read, createdAt, payload]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        message:
+          type: string
+          description: |
+            Human-readable, pt-BR rendered message for display in the feed/toast.
+            Server-rendered so the client does not re-derive copy from the payload.
+          example: "Seu orçamento de Alimentação atingiu 80% do limite."
+        read:
+          type: boolean
+          description: Whether the caller has marked this notification as read.
+        createdAt:
+          type: string
+          format: date-time
+          description: UTC instant the notification was generated.
+        payload:
+          $ref: "#/components/schemas/NotificationPayload"
+
+    NotificationPayload:
+      type: object
+      description: |
+        Structured, type-specific context for deep-linking and rendering. Every field is
+        nullable; which fields are populated depends on the notification type. Monetary
+        fields are centavos (Int64), never floats (P1).
+      properties:
+        budgetId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set for BUDGET_THRESHOLD_80 / BUDGET_THRESHOLD_100.
+        categoryId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The budgeted category. Set for budget threshold notifications.
+        budgetMonth:
+          type: string
+          pattern: "^[0-9]{4}-[0-9]{2}$"
+          nullable: true
+          description: The budget period (YYYY-MM). Set for budget threshold notifications.
+          example: "2026-06"
+        limitAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: Centavos. The budget limit. Set for budget threshold notifications.
+          example: 80000
+        spentAmount:
+          type: integer
+          format: int64
+          nullable: true
+          description: Centavos. Spend at the moment the threshold was crossed.
+          example: 64000
+        invoiceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set for INVOICE_DUE_SOON.
+        cardId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The owning credit card. Set for INVOICE_DUE_SOON.
+        subscriptionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set for SUBSCRIPTION_CHARGE_UPCOMING.
+        investmentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set for INVESTMENT_MATURITY_UPCOMING.
+        amount:
+          type: integer
+          format: int64
+          nullable: true
+          description: |
+            Centavos. The contextual money figure for the event — invoice total due,
+            subscription charge amount, or investment gross value at maturity.
+          example: 4990
+        dueDate:
+          type: string
+          format: date
+          nullable: true
+          description: |
+            The relevant future date (LocalDate): invoice due date, subscription
+            nextChargeDate, or investment maturityDate.
+          example: "2026-06-11"
+
+    NotificationListResponse:
+      type: object
+      required: [notifications, unreadCount]
+      properties:
+        notifications:
+          type: array
+          description: The caller's notifications matching the filter, newest first.
+          items:
+            $ref: "#/components/schemas/NotificationResponse"
+        unreadCount:
+          type: integer
+          format: int32
+          description: |
+            Total unread notifications for the caller, independent of the applied filter
+            (drives the bell badge).
+          example: 3
+
+    MarkAllReadResponse:
+      type: object
+      required: [markedCount]
+      properties:
+        markedCount:
+          type: integer
+          format: int32
+          description: How many notifications transitioned from unread to read.
+          example: 3
+
+    ErrorResponse:
+      type: object
+      required: [timestamp, status, error, message]
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string

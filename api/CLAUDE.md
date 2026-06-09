@@ -85,7 +85,12 @@ Líquido") are computed by the read side via Mongo aggregation and never persist
 - Return `Mono<T>` / `Flux<T>`; controllers return `Mono<ResponseEntity<T>>`.
 - Prefer `Mono.empty()` over null; `Optional<T>` only for synchronous helpers.
 - Error handling via operators (`onErrorResume`, `onErrorMap`), not `try/catch`.
-- Use `Mono.deferContextual` for context (e.g. correlation IDs).
+- **Correlation IDs / tracing are handled by Micrometer Observation + Micrometer Tracing, not by
+  hand-written `Mono.deferContextual` plumbing** (contract P13, ADR-001). Enable
+  `Hooks.enableAutomaticContextPropagation()` once at startup so the trace/observation context (and
+  thus the `correlationId` MDC key) follows the chain across thread hops automatically. Do not read
+  or write the correlation id from the Reactor `Context` by hand. `deferContextual` remains fine for
+  genuinely app-specific context that is not the trace/correlation id.
 - Test reactive streams with `StepVerifier`; assertions via AssertJ.
 
 ## Immutability & type safety
