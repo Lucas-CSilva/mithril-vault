@@ -8,7 +8,7 @@ info:
     Rates are integers × 100 (e.g. 11000 = 110.00% CDI).
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

@@ -77,7 +77,7 @@ Features call `api.ts`, which imports singleton services from `core/services`. N
 
 - **Tokens live in `httpOnly`, `Secure`, `SameSite` cookies** — never `localStorage`/JS storage.
   `ApiClient` sends `credentials: 'include'`; RSC fetches forward the incoming cookies.
-- **401 handling is centralized in `ApiClient`:** on 401 it tries one `POST /auth/refresh` and
+- **401 handling is centralized in `ApiClient`:** on 401 it tries one `POST /refresh` and
   retries once; a failed refresh clears session → redirect to login. Features never do refresh.
 - **Route gating** in `middleware.ts` for `(app)` (redirect unauthenticated → login). This is
   defense-in-depth UX, **not** the security boundary — the API enforces authz (contract P2).

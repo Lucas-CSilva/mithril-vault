@@ -7,7 +7,7 @@ info:
     All values are derived aggregations — nothing is stored specifically for the dashboard.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

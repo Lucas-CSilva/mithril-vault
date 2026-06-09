@@ -6,7 +6,7 @@ info:
     Recurring subscription management with full price history and auto-detection from imports.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

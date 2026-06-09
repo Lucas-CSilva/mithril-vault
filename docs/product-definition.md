@@ -615,8 +615,8 @@ account; each user sees only their own data.
 - Access token: 15-minute expiry
 - Refresh token: 30-day expiry, stored in `httpOnly` cookie (rotating)
 - Passwords hashed with BCrypt or Argon2
-- All endpoints require a valid access token except `POST /auth/register`, `POST /auth/login`,
-  and `POST /auth/refresh`
+- All endpoints require a valid access token except `POST /register`, `POST /login`,
+  and `POST /refresh`
 
 ### Multi-tenancy & Data Isolation
 

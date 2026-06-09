@@ -7,7 +7,7 @@ info:
     Full PAN and CVV are never stored. Only last 4 digits are kept.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

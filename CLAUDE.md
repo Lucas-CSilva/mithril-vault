@@ -56,8 +56,8 @@ const formatBRL = (centavos: number): string =>
 
 ```bash
 docker compose up -d mongodb                 # MongoDB on :27017
-cd api && ./gradlew bootRun                   # API → http://localhost:8080/api/mithril-vault
-                                              # Swagger → /api/mithril-vault/swagger-ui.html
+cd api && ./gradlew bootRun                   # API → http://localhost:8080/mithril-vault
+                                              # Swagger → /mithril-vault/swagger-ui.html
 cd web && pnpm install && pnpm dev            # Web → http://localhost:3000
 ```
 

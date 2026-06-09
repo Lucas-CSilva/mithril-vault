@@ -5,7 +5,7 @@ info:
   description: Savings goals (Cofres) with progress tracking and completion projections.
 
 servers:
-  - url: /api/mithril-vault
+  - url: /mithril-vault
 
 security:
   - BearerAuth: []

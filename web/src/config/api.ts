@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/mithril-vault";
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/mithril-vault";
 
 export const API_ENDPOINTS = {
   health: "/actuator/health",
