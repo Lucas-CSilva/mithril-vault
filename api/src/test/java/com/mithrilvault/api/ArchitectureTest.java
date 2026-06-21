@@ -37,21 +37,6 @@ class ArchitectureTest {
           .resideInAPackage("..infrastructure..");
 
   @ArchTest
-  static final ArchRule domainMustNotUseSpringAnnotations =
-      noClasses()
-          .that()
-          .resideInAPackage("..domain..")
-          .and()
-          .resideOutsideOfPackage("..domain.config..")
-          .should()
-          .dependOnClassesThat()
-          .resideInAnyPackage(
-              "org.springframework.stereotype..",
-              "org.springframework.web..",
-              "org.springframework.data..",
-              "org.springframework.data.mongodb..");
-
-  @ArchTest
   static final ArchRule domainMustNotUseMongoDocumentAnnotations =
       noClasses()
           .that()

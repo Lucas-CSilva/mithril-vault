@@ -34,6 +34,14 @@ spotless {
 }
 
 // ─────────────────────────────────────────────
+// Configurations
+// ─────────────────────────────────────────────
+
+configurations {
+	mockitoAgent
+}
+
+// ─────────────────────────────────────────────
 // Dependencies
 // ─────────────────────────────────────────────
 
@@ -68,7 +76,13 @@ dependencies {
 	compileOnly     libs.lombok
 	annotationProcessor libs.lombok
 	annotationProcessor libs.lombok.mapstruct.binding
+	testCompileOnly     libs.lombok
+	testAnnotationProcessor libs.lombok
 	annotationProcessor libs.mapstruct.processor
+
+	// ── Mockito agent (declared upfront to avoid JDK dynamic-agent warnings) ──
+	mockitoAgent(platform(SpringBootPlugin.BOM_COORDINATES))
+	mockitoAgent("org.mockito:mockito-core") { transitive = false }
 
 	// ── Tests ─────────────────────────────────
 	testImplementation libs.spring.boot.test
@@ -92,6 +106,7 @@ dependencyLocking {
 tasks.named('test') {
 	useJUnitPlatform()
 	exclude '**/*IT.class'
+	jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
 	description = 'Runs unit tests (*Test).'
 }
 
@@ -101,6 +116,7 @@ tasks.register('integrationTest', Test) {
 	testClassesDirs = sourceSets.test.output.classesDirs
 	classpath = sourceSets.test.runtimeClasspath
 	shouldRunAfter test
+	jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
 	description = 'Runs integration tests (*IT) with Testcontainers.'
 	group = 'verification'
 }

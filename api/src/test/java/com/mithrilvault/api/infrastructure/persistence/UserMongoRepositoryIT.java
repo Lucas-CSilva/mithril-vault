@@ -2,9 +2,8 @@ package com.mithrilvault.api.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.mithrilvault.api.AbstractIntegrationTest;
+import com.mithrilvault.api.config.AbstractIntegrationTest;
 import com.mithrilvault.api.domain.model.UserStatus;
-import com.mithrilvault.api.infrastructure.persistence.UserMongoRepository;
 import com.mithrilvault.api.infrastructure.persistence.document.UserDocument;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,23 +21,27 @@ class UserMongoRepositoryIT extends AbstractIntegrationTest {
 
   @Test
   void saveAndFindByEmail() {
-    UserDocument doc = UserDocument.builder()
+    // Given
+    UserDocument doc =
+        UserDocument.builder()
             .email("repo-test@example.com")
             .passwordHash("hashed")
             .displayName("Repo Test")
             .status(UserStatus.ACTIVE)
             .build();
 
+    // When
     userMongoRepository.save(doc).block();
 
     StepVerifier.create(userMongoRepository.findByEmail("repo-test@example.com"))
-            .assertNext(found -> assertThat(found.getEmail()).isEqualTo("repo-test@example.com"))
-            .verifyComplete();
+        .assertNext(found -> assertThat(found.getEmail()).isEqualTo("repo-test@example.com"))
+        .verifyComplete();
   }
 
   @Test
   void findByEmailIsCaseSensitive() {
-    UserDocument doc = UserDocument.builder()
+    UserDocument doc =
+        UserDocument.builder()
             .email("case@example.com")
             .passwordHash("hashed")
             .displayName("Case Test")
@@ -47,14 +50,13 @@ class UserMongoRepositoryIT extends AbstractIntegrationTest {
 
     userMongoRepository.save(doc).block();
 
-    StepVerifier.create(userMongoRepository.findByEmail("CASE@EXAMPLE.COM"))
-            .verifyComplete();
+    StepVerifier.create(userMongoRepository.findByEmail("CASE@EXAMPLE.COM")).verifyComplete();
   }
 
   @Test
   void existsByEmailReturnsFalseWhenAbsent() {
     StepVerifier.create(userMongoRepository.existsByEmail("absent@example.com"))
-            .expectNext(false)
-            .verifyComplete();
+        .expectNext(false)
+        .verifyComplete();
   }
 }

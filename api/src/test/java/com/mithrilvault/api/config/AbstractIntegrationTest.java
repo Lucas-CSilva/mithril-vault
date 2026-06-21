@@ -1,4 +1,4 @@
-package com.mithrilvault.api;
+package com.mithrilvault.api.config;
 
 import com.mithrilvault.api.steps.UserSteps;
 import org.junit.jupiter.api.BeforeEach;

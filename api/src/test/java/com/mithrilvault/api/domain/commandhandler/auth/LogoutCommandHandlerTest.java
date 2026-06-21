@@ -1,8 +1,14 @@
 package com.mithrilvault.api.domain.commandhandler.auth;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.mithrilvault.api.domain.exception.UnauthorizedException;
 import com.mithrilvault.api.domain.model.RefreshToken;
 import com.mithrilvault.api.domain.port.RefreshTokenRepository;
+import com.mithrilvault.api.domain.service.RefreshTokenService;
 import com.mithrilvault.api.fixture.command.auth.LogoutCommands;
 import com.mithrilvault.api.fixture.model.RefreshTokens;
 import com.mithrilvault.api.fixture.model.Users;
@@ -15,46 +21,43 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class LogoutCommandHandlerTest {
 
-    @Mock
-    private RefreshTokenRepository refreshTokenRepository;
+  @Mock private RefreshTokenRepository refreshTokenRepository;
 
-    private LogoutCommandHandler handler;
+  @Mock private RefreshTokenService refreshTokenService;
 
-    @BeforeEach
-    void setUp() {
-        handler = new LogoutCommandHandler(refreshTokenRepository);
-    }
+  private LogoutCommandHandler handler;
 
-    @Test
-    void validTokenIsMarkedRevokedAndCompletes() {
-        RefreshToken activeToken = RefreshTokens.active(Users.DEFAULT_ID);
-        when(refreshTokenRepository.findByTokenHash(RefreshTokens.DEFAULT_TOKEN_HASH))
-                .thenReturn(Mono.just(activeToken));
-        when(refreshTokenRepository.save(any())).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+  @BeforeEach
+  void setUp() {
+    handler = new LogoutCommandHandler(refreshTokenRepository, refreshTokenService);
+    when(refreshTokenService.hash(LogoutCommands.DEFAULT_RAW_TOKEN))
+        .thenReturn(RefreshTokens.DEFAULT_TOKEN_HASH);
+  }
 
-        StepVerifier.create(handler.handle(LogoutCommands.valid()))
-                .verifyComplete();
+  @Test
+  void validTokenIsMarkedRevokedAndCompletes() {
+    RefreshToken activeToken = RefreshTokens.active(Users.DEFAULT_ID);
+    when(refreshTokenRepository.findByTokenHash(RefreshTokens.DEFAULT_TOKEN_HASH))
+        .thenReturn(Mono.just(activeToken));
+    when(refreshTokenRepository.save(any())).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
-        ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
-        verify(refreshTokenRepository).save(captor.capture());
-        assertThat(captor.getValue().revokedAt()).isNotNull();
-    }
+    StepVerifier.create(handler.handle(LogoutCommands.valid())).verifyComplete();
 
-    @Test
-    void unknownTokenHashThrowsUnauthorized() {
-        when(refreshTokenRepository.findByTokenHash(RefreshTokens.DEFAULT_TOKEN_HASH))
-                .thenReturn(Mono.empty());
+    ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);
+    verify(refreshTokenRepository).save(captor.capture());
+    assertThat(captor.getValue().revokedAt()).isNotNull();
+  }
 
-        StepVerifier.create(handler.handle(LogoutCommands.valid()))
-                .expectError(UnauthorizedException.class)
-                .verify();
-    }
+  @Test
+  void unknownTokenHashThrowsUnauthorized() {
+    when(refreshTokenRepository.findByTokenHash(RefreshTokens.DEFAULT_TOKEN_HASH))
+        .thenReturn(Mono.empty());
+
+    StepVerifier.create(handler.handle(LogoutCommands.valid()))
+        .expectError(UnauthorizedException.class)
+        .verify();
+  }
 }
