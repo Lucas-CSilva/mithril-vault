@@ -1,5 +1,6 @@
 package com.mithrilvault.api;
 
+import com.mithrilvault.api.steps.UserSteps;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
@@ -10,16 +11,17 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.mongodb.MongoDBContainer;
 
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @ActiveProfiles("it")
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public abstract class AbstractIntegrationTest {
 
-  @Container static MongoDBContainer mongodb = new MongoDBContainer("mongo:8");
+  static final MongoDBContainer mongodb = new MongoDBContainer("mongo:8");
+
+  static {
+    mongodb.start();
+  }
 
   @DynamicPropertySource
   static void mongoProperties(DynamicPropertyRegistry registry) {
@@ -31,9 +33,11 @@ public abstract class AbstractIntegrationTest {
   @MockitoBean ReactiveJwtDecoder jwtDecoder;
 
   protected WebTestClient webTestClient;
+  protected UserSteps userSteps = new UserSteps();
 
   @BeforeEach
   void initWebTestClient() {
     webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+    userSteps.init(webTestClient);
   }
 }
