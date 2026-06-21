@@ -1,4 +1,4 @@
-package com.mithrilvault.api.infrastructure.config;
+package com.mithrilvault.api.domain.config;
 
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -10,5 +10,5 @@ public record AppProperties(Cors cors, Security security, Jwt jwt) {
 
   public record Security(List<String> publicPaths) {}
 
-  public record Jwt(String secretKey, long accessTokenTtlSeconds, long refreshTokenTtlSeconds) {}
+  public record Jwt(String secretKey, Long accessTokenTtlSeconds, Long refreshTokenTtlSeconds) {}
 }
