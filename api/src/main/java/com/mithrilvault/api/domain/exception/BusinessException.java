@@ -5,7 +5,7 @@ import org.springframework.http.HttpStatus;
 
 public class BusinessException extends DomainException {
 
-  public BusinessException(String code, String message) {
-    super(HttpStatus.UNPROCESSABLE_ENTITY, DomainError.of(code, message));
+  public BusinessException(ErrorCode code, String message) {
+    super(HttpStatus.UNPROCESSABLE_CONTENT, DomainError.of(code, message));
   }
 }

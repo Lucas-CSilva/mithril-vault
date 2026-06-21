@@ -1,8 +1,10 @@
 package com.mithrilvault.api.domain.exception;
 
 import com.mithrilvault.api.domain.model.DomainError;
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
 public abstract class DomainException extends RuntimeException {
 
   private final HttpStatus status;
@@ -12,13 +14,5 @@ public abstract class DomainException extends RuntimeException {
     super(error.message());
     this.status = status;
     this.error = error;
-  }
-
-  public HttpStatus getStatus() {
-    return status;
-  }
-
-  public DomainError getError() {
-    return error;
   }
 }
