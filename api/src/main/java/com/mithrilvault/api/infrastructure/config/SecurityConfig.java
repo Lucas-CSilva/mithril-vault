@@ -1,5 +1,6 @@
 package com.mithrilvault.api.infrastructure.config;
 
+import com.mithrilvault.api.domain.config.AppProperties;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ public class SecurityConfig {
     return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
         .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
         .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+        .logout(ServerHttpSecurity.LogoutSpec::disable)
         .authorizeExchange(
             exchanges ->
                 exchanges.pathMatchers(publicPaths).permitAll().anyExchange().authenticated())

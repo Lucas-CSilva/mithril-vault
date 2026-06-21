@@ -1,8 +1,9 @@
 package com.mithrilvault.api;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -25,9 +26,16 @@ public abstract class AbstractIntegrationTest {
     registry.add("spring.mongodb.uri", mongodb::getReplicaSetUrl);
   }
 
+  @LocalServerPort private int port;
+
   // Prevents Spring from connecting to a real auth server on context startup.
   // Use webTestClient.mutateWith(SecurityMockServerConfigurers.mockJwt()) for authenticated calls.
   @MockitoBean ReactiveJwtDecoder jwtDecoder;
 
-  @Autowired protected WebTestClient webTestClient;
+  protected WebTestClient webTestClient;
+
+  @BeforeEach
+  void initWebTestClient() {
+    webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+  }
 }
