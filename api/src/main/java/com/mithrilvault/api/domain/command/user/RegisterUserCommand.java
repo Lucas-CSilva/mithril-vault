@@ -8,5 +8,5 @@ import lombok.Builder;
 @Builder
 public record RegisterUserCommand(
     @Email @NotBlank String email,
-    @NotBlank @Size(min = 8) String rawPassword,
+    @NotBlank @Size(min = 8, message = "must be at least 8 characters") String rawPassword,
     String displayName) {}

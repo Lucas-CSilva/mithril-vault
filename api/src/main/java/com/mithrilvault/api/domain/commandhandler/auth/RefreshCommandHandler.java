@@ -41,7 +41,7 @@ public class RefreshCommandHandler {
 
               return userRepository
                   .findById(token.userId())
-                  .switchIfEmpty(Mono.error(new UnauthorizedException("User not found")))
+                  .switchIfEmpty(Mono.error(new UnauthorizedException("Invalid refresh token")))
                   .flatMap(
                       user -> {
                         String newAccessToken =
