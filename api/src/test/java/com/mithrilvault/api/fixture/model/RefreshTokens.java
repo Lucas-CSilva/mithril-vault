@@ -7,7 +7,7 @@ import java.time.Instant;
 
 public final class RefreshTokens {
 
-    public static final String DEFAULT_TOKEN_HASH = "sha256-hash-of-raw-refresh-token-abc";
+    public static final String DEFAULT_TOKEN_HASH = "22268f377c4f5fd99747308d325ae66f9c6e6fd1532af89dc5d2a782c0d370e2";
     private static final Instant NOW = Instant.parse("2026-06-21T12:00:00Z");
 
     private RefreshTokens() {}
