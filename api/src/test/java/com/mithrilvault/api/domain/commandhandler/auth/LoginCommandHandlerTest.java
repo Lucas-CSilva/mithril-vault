@@ -45,7 +45,7 @@ class LoginCommandHandlerTest {
 
     @Test
     void unknownEmailThrowsUnauthorized() {
-        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Mono.empty());
+        when(userRepository.findByEmail(LoginCommands.withUnknownEmail().email())).thenReturn(Mono.empty());
 
         StepVerifier.create(handler.handle(LoginCommands.withUnknownEmail()))
                 .expectError(UnauthorizedException.class)
@@ -56,7 +56,7 @@ class LoginCommandHandlerTest {
     void wrongPasswordThrowsUnauthorized() {
         when(userRepository.findByEmail(LoginCommands.DEFAULT_EMAIL))
                 .thenReturn(Mono.just(Users.active()));
-        when(passwordHasher.matches("wrong-password", Users.active().passwordHash()))
+        when(passwordHasher.matches(LoginCommands.withWrongPassword().rawPassword(), Users.active().passwordHash()))
                 .thenReturn(false);
 
         StepVerifier.create(handler.handle(LoginCommands.withWrongPassword()))
