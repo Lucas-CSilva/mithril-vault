@@ -162,7 +162,7 @@ class AuthControllerIT extends AbstractIntegrationTest {
             .filter(c -> c.startsWith("refreshToken="))
             .findFirst()
             .map(c -> c.split(";")[0].substring("refreshToken=".length()))
-            .orElse("");
+            .orElseThrow(() -> new AssertionError("refreshToken cookie not set by register/login"));
 
     webTestClient
         .post()

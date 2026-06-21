@@ -28,8 +28,6 @@ public abstract class AbstractIntegrationTest {
 
   @LocalServerPort private int port;
 
-  // Prevents Spring from connecting to a real auth server on context startup.
-  // Use webTestClient.mutateWith(SecurityMockServerConfigurers.mockJwt()) for authenticated calls.
   @MockitoBean ReactiveJwtDecoder jwtDecoder;
 
   protected WebTestClient webTestClient;
