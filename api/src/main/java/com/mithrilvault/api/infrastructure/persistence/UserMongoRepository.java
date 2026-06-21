@@ -6,7 +6,7 @@ import reactor.core.publisher.Mono;
 
 public interface UserMongoRepository extends ReactiveMongoRepository<UserDocument, String> {
 
-  Mono<UserDocument> findByEmailIgnoreCase(String email);
+  Mono<UserDocument> findByEmail(String email);
 
-  Mono<Boolean> existsByEmailIgnoreCase(String email);
+  Mono<Boolean> existsByEmail(String email);
 }

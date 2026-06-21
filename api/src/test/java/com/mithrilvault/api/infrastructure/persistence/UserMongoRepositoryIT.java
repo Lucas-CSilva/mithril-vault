@@ -31,13 +31,13 @@ class UserMongoRepositoryIT extends AbstractIntegrationTest {
 
     userMongoRepository.save(doc).block();
 
-    StepVerifier.create(userMongoRepository.findByEmailIgnoreCase("repo-test@example.com"))
+    StepVerifier.create(userMongoRepository.findByEmail("repo-test@example.com"))
             .assertNext(found -> assertThat(found.getEmail()).isEqualTo("repo-test@example.com"))
             .verifyComplete();
   }
 
   @Test
-  void findByEmailIsCaseInsensitive() {
+  void findByEmailIsCaseSensitive() {
     UserDocument doc = UserDocument.builder()
             .email("case@example.com")
             .passwordHash("hashed")
@@ -47,14 +47,13 @@ class UserMongoRepositoryIT extends AbstractIntegrationTest {
 
     userMongoRepository.save(doc).block();
 
-    StepVerifier.create(userMongoRepository.findByEmailIgnoreCase("CASE@EXAMPLE.COM"))
-            .assertNext(found -> assertThat(found.getEmail()).isEqualTo("case@example.com"))
+    StepVerifier.create(userMongoRepository.findByEmail("CASE@EXAMPLE.COM"))
             .verifyComplete();
   }
 
   @Test
   void existsByEmailReturnsFalseWhenAbsent() {
-    StepVerifier.create(userMongoRepository.existsByEmailIgnoreCase("absent@example.com"))
+    StepVerifier.create(userMongoRepository.existsByEmail("absent@example.com"))
             .expectNext(false)
             .verifyComplete();
   }

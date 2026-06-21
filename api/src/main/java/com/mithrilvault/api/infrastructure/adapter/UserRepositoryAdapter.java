@@ -22,12 +22,12 @@ public class UserRepositoryAdapter implements UserRepository {
 
   @Override
   public Mono<Boolean> existsByEmail(String email) {
-    return mongoRepository.existsByEmailIgnoreCase(email);
+    return mongoRepository.existsByEmail(email);
   }
 
   @Override
   public Mono<User> findByEmail(String email) {
-    return mongoRepository.findByEmailIgnoreCase(email).map(userMapper::toDomain);
+    return mongoRepository.findByEmail(email).map(userMapper::toDomain);
   }
 
   @Override
