@@ -4,12 +4,9 @@ logging:
     com.mithrilvault.api: INFO
 
 spring:
-  cloud:
-    aws:
-      secretsmanager:
-        enabled: false
-  config:
-    import: ""
+  autoconfigure:
+    exclude:
+      - io.awspring.cloud.autoconfigure.config.secretsmanager.SecretsManagerAutoConfiguration
 
 app:
   jwt:

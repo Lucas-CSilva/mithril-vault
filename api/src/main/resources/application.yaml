@@ -1,9 +1,4 @@
 spring:
-  config:
-    import:
-      - "optional:aws-secretsmanager:/mithril-vault/mongodb"
-      - "optional:aws-secretsmanager:/mithril-vault/jwt"
-
   webflux:
     base-path: /mithril-vault
     codecs:

@@ -36,6 +36,11 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
 
 spring:
+  config:
+    import:
+      - "optional:aws-secretsmanager:/mithril-vault/mongodb"
+      - "optional:aws-secretsmanager:/mithril-vault/jwt"
+
   cloud:
     aws:
       region:

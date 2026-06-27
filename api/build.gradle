@@ -2,6 +2,7 @@ import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
 	id 'java'
+	id 'jacoco'
 	alias(libs.plugins.spring.boot)
 	alias(libs.plugins.spotless)
 }
@@ -122,3 +123,30 @@ tasks.register('integrationTest', Test) {
 	description = 'Runs integration tests (*IT) with Testcontainers.'
 	group = 'verification'
 }
+
+// ─────────────────────────────────────────────
+// Coverage
+// ─────────────────────────────────────────────
+
+jacocoTestReport {
+	dependsOn test, integrationTest
+	executionData(test, integrationTest)
+	reports {
+		xml.required = true
+		html.required = true
+	}
+}
+
+jacocoTestCoverageVerification {
+	dependsOn jacocoTestReport
+	executionData(test, integrationTest)
+	violationRules {
+		rule {
+			limit {
+				minimum = 0.80
+			}
+		}
+	}
+}
+
+check.dependsOn integrationTest, jacocoTestCoverageVerification
