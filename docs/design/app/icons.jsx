@@ -51,6 +51,16 @@ const ICONS = {
   banknote: 'M2 6h20v12H2zM12 12m-2.5 0a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0-5 0M6 9h.01M18 15h.01',
   menu: 'M3 6h18M3 12h18M3 18h18',
   x: 'M6 6l12 12M18 6L6 18',
+  // auth + errors
+  mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  lock: 'M6 11V8a6 6 0 0 1 12 0v3M5 11h14v9H5zM12 15v2',
+  user: 'M5 21v-1a7 7 0 0 1 14 0v1M12 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0',
+  eyeOff: 'M3 3l18 18M10.6 10.6a3 3 0 0 0 4 4M9.4 5.2A9.5 9.5 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3 3.6M6.3 6.3A17 17 0 0 0 2 12s4 7 10 7a9.4 9.4 0 0 0 3.6-.7',
+  alertTriangle: 'M12 3.2L21.5 20H2.5zM12 10v4M12 17.5h.01',
+  alertCircle: 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M12 8v4M12 16h.01',
+  compass: 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0-18 0M16.2 7.8l-2.3 6.4-6.4 2.3 2.3-6.4z',
+  arrowLeft: 'M19 12H5M12 19l-7-7 7-7',
+  lockKey: 'M5 11h14v9H5zM6 11V8a6 6 0 0 1 12 0v3M12 14.5m-1.5 0a1.5 1.5 0 1 0 3 0a1.5 1.5 0 1 0-3 0M12 16v2.5',
 };
 
 function Icon({ name, size = 18, stroke = 2, className = '', style = {}, fill = false }) {

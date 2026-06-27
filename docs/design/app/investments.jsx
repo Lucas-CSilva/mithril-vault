@@ -125,7 +125,7 @@ function Investments() {
             <div>
               <div className="num" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-2)' }}>{MV.fmtDate(inv.maturity)}</div>
               <div className="mono" style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 1 }}>
-                {inv.liquidity === 'DAILY' ? 'Diária' : inv.liquidity === 'AT_MATURITY' ? 'No venc.' : 'Programada'}
+                {inv.liquidity === 'DAILY' ? 'Dária' : inv.liquidity === 'AT_MATURITY' ? 'No venc.' : 'Programada'}
               </div>
             </div>
           </div>

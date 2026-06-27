@@ -58,6 +58,19 @@
 
   /* Border radius for components (Shadcn compatibility) */
   --radius: 0.5rem;
+
+  /* Extended design tokens */
+  --foreground-2: var(--nord-2); /* #434c5e — form labels, secondary headings */
+  --foreground-subtle: #6a7382; /* subtitles, helper text */
+  --foreground-dim: #99a1b0; /* placeholder, disabled text */
+
+  --border-strong: #cdd5e1; /* hover-state borders */
+  --ring-bg: #ecf1f7; /* focus ring wash, ghost-link hover */
+  --ring-border: #d5e0ec; /* ghost-link border */
+
+  --error-bg: #f8ecec; /* error banner / field background */
+  --error-border: #ead2d4; /* error banner border */
+  --error-foreground: #a04852; /* error text (darker than --destructive) */
 }
 
 @theme inline {
@@ -83,6 +96,17 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Extended design token utilities */
+  --color-foreground-2: var(--foreground-2);
+  --color-foreground-subtle: var(--foreground-subtle);
+  --color-foreground-dim: var(--foreground-dim);
+  --color-border-strong: var(--border-strong);
+  --color-ring-bg: var(--ring-bg);
+  --color-ring-border: var(--ring-border);
+  --color-error-bg: var(--error-bg);
+  --color-error-border: var(--error-border);
+  --color-error-foreground: var(--error-foreground);
 }
 
 /* ============================================================================
