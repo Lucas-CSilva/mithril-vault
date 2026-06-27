@@ -8,6 +8,7 @@ springdoc                = "3.0.3"
 testcontainers           = "2.0.5"
 logstash-logback         = "8.1"
 archunit                 = "1.4.1"
+aws-sdk                  = "2.31.9"
 
 [libraries]
 # ── Spring Boot Starters (version managed by BOM — no version needed) ─────────
@@ -47,6 +48,8 @@ logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-enc
 # ── Architecture testing ───────────────────────────────────────────────────────
 archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
 
+# ── AWS SDK ────────────────────────────────────────────────────────────────
+aws-secretsmanager = { module = "software.amazon.awssdk:secretsmanager", version.ref = "aws-sdk" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot",  version.ref = "spring-boot" }

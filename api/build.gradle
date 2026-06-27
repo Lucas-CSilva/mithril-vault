@@ -68,6 +68,7 @@ dependencies {
 	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
 	implementation 'io.micrometer:context-propagation'
 	implementation libs.logstash.logback.encoder
+	implementation libs.aws.secretsmanager
 
 	// ── Development ───────────────────────────
 	developmentOnly libs.spring.boot.devtools
