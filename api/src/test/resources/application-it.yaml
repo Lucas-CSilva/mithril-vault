@@ -3,9 +3,13 @@ logging:
     root: WARN
     com.mithrilvault.api: INFO
 
-aws:
-  secretsmanager:
-    enabled: false
+spring:
+  cloud:
+    aws:
+      secretsmanager:
+        enabled: false
+  config:
+    import: ""
 
 app:
   jwt:

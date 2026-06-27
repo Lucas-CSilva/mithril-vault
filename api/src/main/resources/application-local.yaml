@@ -19,7 +19,13 @@ management:
     health:
       show-details: always
 
-aws:
-  secretsmanager:
-    endpoint: http://localhost:4566
-    region: us-east-1
+spring:
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      credentials:
+        access-key: test
+        secret-key: test
+      secretsmanager:
+        endpoint: http://localhost:4566
