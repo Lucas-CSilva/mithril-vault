@@ -31,8 +31,8 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
           new SecretMapping("/mithril-vault/mongodb", "uri", "spring.mongodb.uri"),
           new SecretMapping("/mithril-vault/jwt", "secretKey", "app.jwt.secret-key"));
 
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final Function<ConfigurableEnvironment, SecretsManagerClient> clientFactory;
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public SecretsManagerEnvironmentPostProcessor() {
     this.clientFactory = this::buildClient;
@@ -49,17 +49,18 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
       return;
     }
 
-    SecretsManagerClient client = clientFactory.apply(environment);
-    Map<String, Object> properties = new HashMap<>();
+    try (SecretsManagerClient client = clientFactory.apply(environment)) {
+      Map<String, Object> properties = new HashMap<>();
 
-    for (SecretMapping mapping : MAPPINGS) {
-      String secretString = fetchSecret(client, mapping.secretName());
-      properties.put(mapping.springProperty(), extractJsonField(secretString, mapping.jsonKey()));
+      for (SecretMapping mapping : MAPPINGS) {
+        String secretString = fetchSecret(client, mapping.secretName());
+        properties.put(mapping.springProperty(), extractJsonField(secretString, mapping.jsonKey()));
+      }
+
+      environment
+          .getPropertySources()
+          .addFirst(new MapPropertySource(PROPERTY_SOURCE_NAME, properties));
     }
-
-    environment
-        .getPropertySources()
-        .addFirst(new MapPropertySource(PROPERTY_SOURCE_NAME, properties));
   }
 
   private SecretsManagerClient buildClient(ConfigurableEnvironment environment) {
@@ -88,7 +89,7 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
 
   private String extractJsonField(String jsonSecret, String fieldName) {
     try {
-      Map<String, String> parsed = objectMapper.readValue(jsonSecret, new TypeReference<>() {});
+      Map<String, String> parsed = OBJECT_MAPPER.readValue(jsonSecret, new TypeReference<>() {});
       String value = parsed.get(fieldName);
       if (value == null) {
         throw new IllegalStateException("Field '" + fieldName + "' not found in secret JSON");
