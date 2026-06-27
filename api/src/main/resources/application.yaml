@@ -5,7 +5,6 @@ spring:
       max-in-memory-size: 16MB
 
   mongodb:
-      uri: mongodb://root:root@localhost:27017/mithril_vault?authSource=admin&replicaSet=rs0
       connection-pool:
         min-size: 10
         max-size: 100
@@ -62,6 +61,5 @@ app:
       - /refresh
       - /logout
   jwt:
-    secret-key: ${JWT_SECRET_KEY:change-me-in-production-at-least-32-chars!!}
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 2592000

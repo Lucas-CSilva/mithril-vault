@@ -2,3 +2,11 @@ logging:
   level:
     root: WARN
     com.mithrilvault.api: INFO
+
+aws:
+  secretsmanager:
+    enabled: false
+
+app:
+  jwt:
+    secret-key: integration-test-secret-not-for-production-use!!
