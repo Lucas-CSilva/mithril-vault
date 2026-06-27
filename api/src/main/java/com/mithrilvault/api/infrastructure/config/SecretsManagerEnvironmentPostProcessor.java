@@ -7,8 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import org.jspecify.annotations.NonNull;
+import org.springframework.boot.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -44,7 +45,7 @@ public class SecretsManagerEnvironmentPostProcessor implements EnvironmentPostPr
 
   @Override
   public void postProcessEnvironment(
-      ConfigurableEnvironment environment, SpringApplication application) {
+      ConfigurableEnvironment environment, @NonNull SpringApplication application) {
     if (!environment.getProperty(ENABLED_PROPERTY, Boolean.class, true)) {
       return;
     }

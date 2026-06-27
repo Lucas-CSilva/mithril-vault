@@ -3,7 +3,6 @@
 
 app:
   jwt:
-    secret-key: local-dev-secret-not-used-security-is-open
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 2592000
 
