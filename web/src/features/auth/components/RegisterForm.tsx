@@ -5,61 +5,15 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  AlertCircle,
-  AlertTriangle,
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  User,
-} from "lucide-react";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { AlertTriangle, Mail, User } from "lucide-react";
+import { useForm, useWatch } from "react-hook-form";
 
 import { useAuth } from "@/core/contexts/AuthContext";
-import { cn } from "@/shared/utils/cn";
 
 import { registerSchema, type RegisterFormValues } from "../schema";
+import { AuthField } from "./AuthField";
 import { BrandPanel } from "./BrandPanel";
-
-function AuthField({
-  label,
-  icon,
-  error,
-  children,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  error?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-[7px]">
-      <label className="text-foreground-2 text-[12.5px] font-semibold tracking-[-0.005em]">
-        {label}
-      </label>
-      <div
-        className={cn(
-          "group bg-card relative flex items-center rounded-[14px] border transition-all duration-150",
-          error
-            ? "border-destructive focus-within:shadow-[0_0_0_3.5px_var(--error-bg)]"
-            : "border-input hover:border-border-strong focus-within:border-ring focus-within:shadow-[0_0_0_3.5px_var(--ring-bg)]",
-        )}
-      >
-        <span className="text-foreground-dim group-focus-within:text-ring ml-[14px] flex-shrink-0 transition-colors">
-          {icon}
-        </span>
-        {children}
-      </div>
-      {error && (
-        <p className="text-error-foreground flex items-center gap-[5px] text-[12px]">
-          <AlertCircle size={13} className="flex-shrink-0" />
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
+import { PasswordField } from "./PasswordField";
 
 function scorePassword(pw: string): number {
   if (!pw) return 0;
@@ -122,7 +76,6 @@ function StrengthMeter({ value }: { value: string }) {
 export function RegisterForm() {
   const { register: registerUser } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -135,7 +88,6 @@ export function RegisterForm() {
       displayName: "",
       email: "",
       password: "",
-      terms: false,
     },
   });
 
@@ -170,7 +122,6 @@ export function RegisterForm() {
       />
 
       <div className="bg-background flex flex-col overflow-y-auto px-[40px] py-[30px]">
-        {/* Topbar */}
         <div className="flex items-center justify-end gap-[7px]">
           <span className="text-foreground-subtle text-[13px]">
             Já tem conta?
@@ -183,8 +134,7 @@ export function RegisterForm() {
           </Link>
         </div>
 
-        {/* Auth card */}
-        <div className="mx-auto w-full max-w-[388px] pt-2 pb-6">
+        <div className="mx-auto my-auto w-full max-w-[388px] py-6">
           <div className="text-foreground-dim font-mono text-[10.5px] font-semibold tracking-[0.16em] uppercase">
             Criar conta
           </div>
@@ -236,91 +186,14 @@ export function RegisterForm() {
             </AuthField>
 
             <div>
-              <AuthField
+              <PasswordField
                 label="Senha"
-                icon={<Lock size={18} />}
+                autoComplete="new-password"
+                placeholder="Mínimo de 8 caracteres"
                 error={errors.password?.message}
-              >
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Mínimo de 8 caracteres"
-                  autoComplete="new-password"
-                  className="text-foreground placeholder:text-foreground-dim min-w-0 flex-1 bg-transparent px-[14px] py-[13px] text-[15px] outline-none"
-                  {...register("password")}
-                />
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  onClick={() => setShowPassword((s) => !s)}
-                  className="text-foreground-dim hover:bg-background hover:text-foreground-2 mr-1 grid h-[40px] w-[40px] flex-shrink-0 place-items-center rounded-[9px] transition-colors"
-                >
-                  {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                </button>
-              </AuthField>
-              <StrengthMeter value={passwordValue} />
-            </div>
-
-            {/* Terms */}
-            <div>
-              <Controller
-                control={control}
-                name="terms"
-                render={({ field }) => (
-                  <label className="inline-flex cursor-pointer items-center gap-[9px] select-none">
-                    <span
-                      className={cn(
-                        "grid h-[18px] w-[18px] flex-shrink-0 place-items-center rounded-[6px] border-[1.5px] transition-colors",
-                        field.value
-                          ? "border-ring bg-ring text-white"
-                          : "border-border-strong bg-card text-transparent",
-                      )}
-                      onClick={() => field.onChange(!field.value)}
-                    >
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    </span>
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={!!field.value}
-                      onChange={(e) => field.onChange(e.target.checked)}
-                    />
-                    <span className="text-foreground-2 text-[13px]">
-                      Li e aceito os{" "}
-                      <a
-                        href="#"
-                        className="text-ring font-semibold underline-offset-[3px] hover:underline"
-                      >
-                        Termos
-                      </a>{" "}
-                      e a{" "}
-                      <a
-                        href="#"
-                        className="text-ring font-semibold underline-offset-[3px] hover:underline"
-                      >
-                        Política de Privacidade
-                      </a>
-                    </span>
-                  </label>
-                )}
+                {...register("password")}
               />
-              {errors.terms && (
-                <p className="text-error-foreground mt-[7px] flex items-center gap-[5px] text-[12px]">
-                  <AlertCircle size={13} className="flex-shrink-0" />
-                  {errors.terms.message}
-                </p>
-              )}
+              <StrengthMeter value={passwordValue} />
             </div>
 
             <button

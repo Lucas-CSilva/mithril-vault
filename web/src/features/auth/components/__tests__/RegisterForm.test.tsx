@@ -23,7 +23,7 @@ vi.mock("next/link", () => ({
 }));
 
 describe("RegisterForm", () => {
-  it("renders name, email, password fields and terms checkbox", () => {
+  it("renders name, email and password fields", () => {
     render(<RegisterForm />);
     expect(
       screen.getByPlaceholderText("Como podemos te chamar?"),
@@ -32,7 +32,6 @@ describe("RegisterForm", () => {
     expect(
       screen.getByPlaceholderText("Mínimo de 8 caracteres"),
     ).toBeInTheDocument();
-    expect(screen.getByRole("checkbox")).toBeInTheDocument();
   });
 
   it("shows name required error when display name is empty", async () => {
@@ -90,31 +89,6 @@ describe("RegisterForm", () => {
     );
   });
 
-  it("shows terms validation error when terms are not accepted", async () => {
-    const user = userEvent.setup();
-    render(<RegisterForm />);
-
-    await user.type(
-      screen.getByPlaceholderText("Como podemos te chamar?"),
-      "Test User",
-    );
-    await user.type(
-      screen.getByPlaceholderText("voce@email.com"),
-      "user@test.com",
-    );
-    await user.type(
-      screen.getByPlaceholderText("Mínimo de 8 caracteres"),
-      "validpassword",
-    );
-    await user.click(screen.getByRole("button", { name: "Criar conta" }));
-
-    await waitFor(() =>
-      expect(
-        screen.getByText("É preciso aceitar para continuar."),
-      ).toBeInTheDocument(),
-    );
-  });
-
   it("updates the password strength meter as the user types", async () => {
     const user = userEvent.setup();
     render(<RegisterForm />);
@@ -136,7 +110,7 @@ describe("RegisterForm", () => {
     await waitFor(() => expect(screen.getByText("Forte")).toBeInTheDocument());
   });
 
-  it("calls register without the terms field on valid submit", async () => {
+  it("calls register with correct values on valid submit", async () => {
     const user = userEvent.setup();
     mockRegister.mockResolvedValue(undefined);
     render(<RegisterForm />);
@@ -153,7 +127,6 @@ describe("RegisterForm", () => {
       screen.getByPlaceholderText("Mínimo de 8 caracteres"),
       "validpassword",
     );
-    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
 
     await waitFor(() =>
@@ -183,7 +156,6 @@ describe("RegisterForm", () => {
       screen.getByPlaceholderText("Mínimo de 8 caracteres"),
       "validpassword",
     );
-    await user.click(screen.getByRole("checkbox"));
     await user.click(screen.getByRole("button", { name: "Criar conta" }));
 
     await waitFor(() =>
