@@ -1,5 +1,6 @@
 package com.mithrilvault.api.domain.commandhandler.category;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,9 +42,9 @@ class CreateCategoryCommandHandlerTest {
             handler.handle(new CreateCategoryCommand("Pets", null, "🐾", "#A3BE8C", "owner-1")))
         .assertNext(
             cat -> {
-              assert cat.name().equals("Pets");
-              assert cat.ownerId().equals("owner-1");
-              assert !cat.isSystem();
+              assertThat(cat.name()).isEqualTo("Pets");
+              assertThat(cat.ownerId()).isEqualTo("owner-1");
+              assertThat(cat.isSystem()).isFalse();
             })
         .verifyComplete();
   }
@@ -62,7 +63,7 @@ class CreateCategoryCommandHandlerTest {
                 new CreateCategoryCommand("Orgânicos", "parent-1", null, null, "owner-1")))
         .assertNext(
             cat -> {
-              assert cat.parentId().equals("parent-1");
+              assertThat(cat.parentId()).isEqualTo("parent-1");
             })
         .verifyComplete();
   }
