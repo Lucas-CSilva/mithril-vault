@@ -56,7 +56,7 @@ class LoginCommandHandlerTest {
     when(userRepository.findByEmail(LoginCommands.DEFAULT_EMAIL))
         .thenReturn(Mono.just(Users.active()));
     when(passwordHasher.matches(
-            LoginCommands.withWrongPassword().rawPassword(), Users.active().passwordHash()))
+            LoginCommands.withWrongPassword().password(), Users.active().passwordHash()))
         .thenReturn(false);
 
     StepVerifier.create(handler.handle(LoginCommands.withWrongPassword()))

@@ -26,7 +26,7 @@ public class LoginCommandHandler {
               if (user.status() != UserStatus.ACTIVE) {
                 return Mono.error(new UnauthorizedException("Account disabled"));
               }
-              if (!passwordHasher.matches(command.rawPassword(), user.passwordHash())) {
+              if (!passwordHasher.matches(command.password(), user.passwordHash())) {
                 return Mono.error(new UnauthorizedException("Invalid credentials"));
               }
               return Mono.just(user);

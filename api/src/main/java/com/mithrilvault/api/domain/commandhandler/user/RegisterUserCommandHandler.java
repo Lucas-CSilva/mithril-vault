@@ -30,7 +30,7 @@ public class RegisterUserCommandHandler {
               User user =
                   User.builder()
                       .email(command.email().toLowerCase())
-                      .passwordHash(passwordHasher.hash(command.rawPassword()))
+                      .passwordHash(passwordHasher.hash(command.password()))
                       .displayName(command.displayName())
                       .status(ACTIVE)
                       .build();
