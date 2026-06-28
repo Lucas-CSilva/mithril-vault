@@ -1,27 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(./gradlew test:*)",
-      "Bash(./gradlew integrationTest:*)",
-      "Bash(./gradlew spotlessApply:*)",
-      "Bash(./gradlew build:*)",
-      "Bash(./gradlew bootRun:*)",
-      "Bash(pnpm install:*)",
-      "Bash(pnpm dev:*)",
-      "Bash(pnpm build:*)",
-      "Bash(pnpm lint:*)",
-      "Bash(pnpm format:*)",
-      "Bash(pnpm test:*)",
-      "Bash(pnpm exec prettier:*)",
-      "Bash(docker compose up:*)",
-      "Bash(docker compose down:*)",
-      "Bash(ls:*)",
-      "Bash(find:*)",
-      "Bash(grep:*)",
-      "Bash(rg:*)",
-      "Bash(git status:*)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Write",
+      "Edit",
+      "Bash(./gradlew *)",
+      "Bash(pnpm *)",
+      "Bash(docker compose *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(mv *)"
     ]
   },
   "hooks": {

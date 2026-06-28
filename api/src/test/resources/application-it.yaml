@@ -2,3 +2,12 @@ logging:
   level:
     root: WARN
     com.mithrilvault.api: INFO
+
+spring:
+  autoconfigure:
+    exclude:
+      - io.awspring.cloud.autoconfigure.config.secretsmanager.SecretsManagerAutoConfiguration
+
+app:
+  jwt:
+    secret-key: integration-test-secret-not-for-production-use!!

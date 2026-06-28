@@ -1,5 +1,7 @@
 package com.mithrilvault.api.infrastructure.config;
 
+import com.mithrilvault.api.domain.config.AppProperties;
+import com.mithrilvault.api.domain.port.TokenProvider;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class JwtProvider {
+public class JwtProvider implements TokenProvider {
 
   private final AppProperties appProperties;
 

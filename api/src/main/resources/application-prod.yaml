@@ -1,6 +1,5 @@
 spring:
   mongodb:
-      uri: ${MONGODB_URI}
       connection-pool:
         min-size: 20
         max-size: 200
@@ -35,3 +34,14 @@ server:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+spring:
+  config:
+    import:
+      - "optional:aws-secretsmanager:/mithril-vault/mongodb"
+      - "optional:aws-secretsmanager:/mithril-vault/jwt"
+
+  cloud:
+    aws:
+      region:
+        static: us-east-1

@@ -61,10 +61,30 @@ services:
               print("replica set initiated");
             }'
 
+  localstack:
+    image: localstack/localstack:3.7.0
+    container_name: mithril_localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=secretsmanager
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - ./localstack/init:/etc/localstack/init/ready.d
+    healthcheck:
+      test: ["CMD", "awslocal", "secretsmanager", "list-secrets"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
 volumes:
   mongodb_data:
     driver: local
   mongodb_config:
     driver: local
   mongodb_keyfile:
+    driver: local
+  localstack_data:
     driver: local

@@ -3,7 +3,6 @@
 
 app:
   jwt:
-    secret-key: local-dev-secret-not-used-security-is-open
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 2592000
 
@@ -19,3 +18,19 @@ management:
   endpoint:
     health:
       show-details: always
+
+spring:
+  config:
+    import:
+      - "optional:aws-secretsmanager:/mithril-vault/mongodb"
+      - "optional:aws-secretsmanager:/mithril-vault/jwt"
+
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      credentials:
+        access-key: test
+        secret-key: test
+      secretsmanager:
+        endpoint: http://localhost:4566

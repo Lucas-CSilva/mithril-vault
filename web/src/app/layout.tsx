@@ -1,3 +1,4 @@
+import { AuthProvider } from "@/core/contexts/AuthContext";
 import QueryProvider from "@/shared/components/QueryProvider";
 
 import type { Metadata, Viewport } from "next";
@@ -31,7 +32,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-background text-foreground min-h-screen antialiased">
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );
