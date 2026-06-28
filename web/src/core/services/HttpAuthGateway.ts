@@ -19,8 +19,12 @@ class HttpAuthGateway implements AuthGateway {
       const text = await response.text();
       let message = `HTTP ${response.status}`;
       try {
-        const json = JSON.parse(text) as { message?: string };
-        if (json.message) message = json.message;
+        const json = JSON.parse(text) as {
+          errors?: { message: string }[];
+          message?: string;
+        };
+        if (json.errors?.[0]?.message) message = json.errors[0].message;
+        else if (json.message) message = json.message;
       } catch {
         // plain text error body
       }
