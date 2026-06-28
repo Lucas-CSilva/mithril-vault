@@ -12,6 +12,8 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { LogoutButton } from "@/features/auth/components/LogoutButton";
+
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: BarChart3 },
@@ -46,13 +48,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center justify-end border-b border-[#D8DEE9] bg-[#E5E9F0] px-6">
+        <header className="flex h-16 items-center justify-end gap-2 border-b border-[#D8DEE9] bg-[#E5E9F0] px-6">
           <button
-            aria-label="Notifications"
+            aria-label="Notificações"
             className="rounded-full p-2 text-[#4C566A] transition-colors hover:bg-[#D8DEE9]"
           >
             <Bell size={20} />
           </button>
+          <LogoutButton />
         </header>
         <main className="flex-1 overflow-auto p-6">{children}</main>
       </div>

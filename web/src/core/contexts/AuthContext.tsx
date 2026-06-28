@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (req: LoginRequest) => {
       const res = await httpAuthGateway.login(req);
       setUser(res);
-      router.push("/");
+      router.push("/dashboard");
     },
     [router],
   );
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (req: RegisterRequest) => {
       const res = await httpAuthGateway.register(req);
       setUser(res);
-      router.push("/");
+      router.push("/dashboard");
     },
     [router],
   );
