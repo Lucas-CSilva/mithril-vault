@@ -1,5 +1,6 @@
 package com.mithrilvault.api.infrastructure.adapter;
 
+import com.mithrilvault.api.domain.exception.ConflictException;
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
 import com.mithrilvault.api.domain.port.CategoryRepository;
@@ -34,7 +35,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
                 new Criteria()
                     .orOperator(
                         Criteria.where(CategoryDocument.Fields.ownerId).is(ownerId),
-                        Criteria.where(CategoryDocument.Fields.ownerId).isNull())),
+                        Criteria.where(CategoryDocument.Fields.isSystem).is(true))),
             CategoryDocument.class)
         .map(categoryMapper::toDomain);
   }
@@ -50,7 +51,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
                         new Criteria()
                             .orOperator(
                                 Criteria.where(CategoryDocument.Fields.ownerId).is(ownerId),
-                                Criteria.where(CategoryDocument.Fields.ownerId).isNull()))),
+                                Criteria.where(CategoryDocument.Fields.isSystem).is(true)))),
             CategoryDocument.class)
         .map(categoryMapper::toDomain);
   }
@@ -71,7 +72,12 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
 
   @Override
   public Mono<Category> save(Category category) {
-    return mongoRepository.save(categoryMapper.toDocument(category)).map(categoryMapper::toDomain);
+    return mongoRepository
+        .save(categoryMapper.toDocument(category))
+        .onErrorMap(
+            org.springframework.dao.DuplicateKeyException.class,
+            ex -> new ConflictException("Category name already exists"))
+        .map(categoryMapper::toDomain);
   }
 
   @Override
@@ -81,7 +87,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
 
     return reactiveMongoTemplate
         .updateMulti(
-            Query.query(Criteria.where("id").in(childIds)),
+            Query.query(Criteria.where("_id").in(childIds)),
             Update.update(CategoryDocument.Fields.parentId, outrosId),
             CategoryDocument.class)
         .then(mongoRepository.deleteById(categoryId));

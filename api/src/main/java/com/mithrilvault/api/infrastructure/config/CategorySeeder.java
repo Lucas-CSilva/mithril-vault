@@ -41,7 +41,12 @@ public class CategorySeeder implements ApplicationRunner {
   }
 
   private Mono<CategoryDocument> seedCategory(String name) {
-    Query query = Query.query(Criteria.where("isSystem").is(true).and("name").is(name));
+    Query query =
+        Query.query(
+            Criteria.where(CategoryDocument.Fields.isSystem)
+                .is(true)
+                .and(CategoryDocument.Fields.name)
+                .is(name));
     return mongoTemplate
         .findOne(query, CategoryDocument.class)
         .switchIfEmpty(Mono.defer(() -> mongoTemplate.save(buildDocument(name))));
