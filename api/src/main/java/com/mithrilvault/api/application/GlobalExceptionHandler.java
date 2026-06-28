@@ -4,6 +4,7 @@ import com.mithrilvault.api.application.response.ErrorResponse;
 import com.mithrilvault.api.domain.exception.ConflictException;
 import com.mithrilvault.api.domain.exception.DomainException;
 import com.mithrilvault.api.domain.exception.ErrorCode;
+import com.mithrilvault.api.domain.exception.ForbiddenException;
 import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.exception.UnauthorizedException;
 import com.mithrilvault.api.domain.model.DomainError;
@@ -26,6 +27,13 @@ public class GlobalExceptionHandler {
   @ResponseStatus(HttpStatus.UNAUTHORIZED)
   public ErrorResponse handleUnauthorized(UnauthorizedException ex) {
     log.warn("Unauthorized: {}", ex.getMessage());
+    return ErrorResponse.of(ex.getError());
+  }
+
+  @ExceptionHandler(ForbiddenException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public ErrorResponse handleForbidden(ForbiddenException ex) {
+    log.warn("Forbidden: {}", ex.getMessage());
     return ErrorResponse.of(ex.getError());
   }
 
