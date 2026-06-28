@@ -90,4 +90,16 @@ class DeleteCategoryCommandHandlerTest {
         .expectError(NotFoundException.class)
         .verify();
   }
+
+  @Test
+  void throwsNotFoundWhenCategoryDoesNotExist() {
+    when(categoryReadRepository.findById("missing-id")).thenReturn(Mono.empty());
+
+    StepVerifier.create(
+            handler.handle(new DeleteCategoryCommand("missing-id", "owner-1")))
+        .expectError(NotFoundException.class)
+        .verify();
+
+    verify(categoryRepository, never()).deleteWithReassignment(any(), any(), any());
+  }
 }

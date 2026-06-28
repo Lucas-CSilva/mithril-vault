@@ -7,7 +7,6 @@ import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
 import com.mithrilvault.api.domain.port.CategoryRepository;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -20,9 +19,11 @@ public class CreateCategoryCommandHandler {
   private final CategoryReadRepository categoryReadRepository;
 
   public Mono<Category> handle(CreateCategoryCommand command) {
+
     if (command.parentId() == null) {
       return save(command, null);
     }
+
     return categoryReadRepository
         .findVisibleById(command.parentId(), command.ownerId())
         .switchIfEmpty(Mono.error(new NotFoundException("Parent category not found")))
@@ -41,7 +42,6 @@ public class CreateCategoryCommandHandler {
   private Mono<Category> save(CreateCategoryCommand command, String resolvedParentId) {
     Category category =
         Category.builder()
-            .id(UUID.randomUUID().toString())
             .name(command.name())
             .parentId(resolvedParentId)
             .icon(command.icon())

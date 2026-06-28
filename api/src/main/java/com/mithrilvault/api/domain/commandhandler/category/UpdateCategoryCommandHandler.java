@@ -6,6 +6,7 @@ import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
 import com.mithrilvault.api.domain.port.CategoryRepository;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -26,16 +27,18 @@ public class UpdateCategoryCommandHandler {
               if (existing.isSystem()) {
                 return Mono.error(new ForbiddenException("System categories cannot be modified"));
               }
+
               if (!command.ownerId().equals(existing.ownerId())) {
                 return Mono.error(new NotFoundException("Category not found"));
               }
-              Category updated =
-                  existing.toBuilder()
-                      .name(command.name() != null ? command.name() : existing.name())
-                      .icon(command.icon() != null ? command.icon() : existing.icon())
-                      .color(command.color() != null ? command.color() : existing.color())
-                      .build();
-              return categoryRepository.save(updated);
+
+              Category.CategoryBuilder updated = existing.toBuilder();
+
+              Optional.ofNullable(command.name()).ifPresent(updated::name);
+              Optional.ofNullable(command.icon()).ifPresent(updated::icon);
+              Optional.ofNullable(command.color()).ifPresent(updated::color);
+
+              return categoryRepository.save(updated.build());
             });
   }
 }

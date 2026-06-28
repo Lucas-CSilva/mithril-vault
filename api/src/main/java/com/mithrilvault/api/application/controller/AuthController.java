@@ -12,6 +12,7 @@ import com.mithrilvault.api.domain.commandhandler.auth.LogoutCommandHandler;
 import com.mithrilvault.api.domain.commandhandler.auth.RefreshCommandHandler;
 import com.mithrilvault.api.domain.commandhandler.user.RegisterUserCommandHandler;
 import com.mithrilvault.api.domain.config.AppProperties;
+import com.mithrilvault.api.domain.model.User;
 import com.mithrilvault.api.domain.result.IssuedTokens;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +90,7 @@ public class AuthController {
   }
 
   private Mono<ResponseEntity<AuthResponse>> issueTokensAndRespond(
-      com.mithrilvault.api.domain.model.User user, ServerWebExchange exchange, HttpStatus status) {
+      User user, ServerWebExchange exchange, HttpStatus status) {
 
     return issueTokensCommandHandler
         .handle(new IssueTokensCommand(user))

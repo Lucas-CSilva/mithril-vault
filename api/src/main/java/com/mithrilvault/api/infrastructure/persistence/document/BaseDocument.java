@@ -1,10 +1,8 @@
 package com.mithrilvault.api.infrastructure.persistence.document;
 
 import java.time.Instant;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -14,6 +12,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 @Setter
 @SuperBuilder
 @NoArgsConstructor
+@FieldNameConstants
 @AllArgsConstructor
 public abstract class BaseDocument {
 
