@@ -2,7 +2,7 @@ package com.mithrilvault.api.domain.model;
 
 import lombok.Builder;
 
-@Builder
+@Builder(toBuilder = true)
 public record Category(
     String id,
     String name,
