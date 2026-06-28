@@ -21,12 +21,24 @@ public class MongoIndexConfig {
       Index userIdIndex = new Index().on("userId", Sort.Direction.ASC);
       Index expiresAtIndex = new Index().on("expiresAt", Sort.Direction.ASC).expire(0);
 
+      Index categoryOwnerIndex = new Index().on("ownerId", Sort.Direction.ASC).sparse();
+      Index categorySystemIndex = new Index().on("isSystem", Sort.Direction.ASC);
+      Index categoryNameIndex =
+          new Index()
+              .on("ownerId", Sort.Direction.ASC)
+              .on("name", Sort.Direction.ASC)
+              .unique()
+              .sparse();
+
       mongoTemplate
           .indexOps("users")
           .createIndex(emailIndex)
           .then(mongoTemplate.indexOps("refresh_tokens").createIndex(tokenHashIndex))
           .then(mongoTemplate.indexOps("refresh_tokens").createIndex(userIdIndex))
           .then(mongoTemplate.indexOps("refresh_tokens").createIndex(expiresAtIndex))
+          .then(mongoTemplate.indexOps("categories").createIndex(categoryOwnerIndex))
+          .then(mongoTemplate.indexOps("categories").createIndex(categorySystemIndex))
+          .then(mongoTemplate.indexOps("categories").createIndex(categoryNameIndex))
           .subscribe();
     };
   }
