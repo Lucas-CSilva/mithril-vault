@@ -29,6 +29,8 @@ desktop.ini
 **/settings.local.json
 .claude/*.local.json
 .claude/projects/
+.playwright-mcp/
+.superpowers/
 
 # --- Logs & temp ---
 *.log
