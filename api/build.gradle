@@ -108,20 +108,8 @@ dependencyLocking {
 
 tasks.named('test') {
 	useJUnitPlatform()
-	exclude '**/*IT.class'
 	jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
-	description = 'Runs unit tests (*Test).'
-}
-
-tasks.register('integrationTest', Test) {
-	useJUnitPlatform()
-	include '**/*IT.class'
-	testClassesDirs = sourceSets.test.output.classesDirs
-	classpath = sourceSets.test.runtimeClasspath
-	shouldRunAfter test
-	jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
-	description = 'Runs integration tests (*IT) with Testcontainers.'
-	group = 'verification'
+	description = 'Runs all tests (unit and integration).'
 }
 
 // ─────────────────────────────────────────────
@@ -129,8 +117,7 @@ tasks.register('integrationTest', Test) {
 // ─────────────────────────────────────────────
 
 jacocoTestReport {
-	dependsOn test, integrationTest
-	executionData(test, integrationTest)
+	dependsOn test
 	reports {
 		xml.required = true
 		html.required = true
@@ -139,7 +126,6 @@ jacocoTestReport {
 
 jacocoTestCoverageVerification {
 	dependsOn jacocoTestReport
-	executionData(test, integrationTest)
 	violationRules {
 		rule {
 			limit {
@@ -149,4 +135,4 @@ jacocoTestCoverageVerification {
 	}
 }
 
-check.dependsOn integrationTest, jacocoTestCoverageVerification
+check.dependsOn jacocoTestCoverageVerification
