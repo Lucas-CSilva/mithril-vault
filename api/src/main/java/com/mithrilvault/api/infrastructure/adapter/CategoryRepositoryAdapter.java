@@ -31,7 +31,10 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
     return reactiveMongoTemplate
         .find(
             Query.query(
-                Criteria.where(CategoryDocument.Fields.ownerId).is(ownerId).orOperator().is(null)),
+                new Criteria()
+                    .orOperator(
+                        Criteria.where(CategoryDocument.Fields.ownerId).is(ownerId),
+                        Criteria.where(CategoryDocument.Fields.ownerId).isNull())),
             CategoryDocument.class)
         .map(categoryMapper::toDomain);
   }
@@ -41,7 +44,13 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
     return reactiveMongoTemplate
         .findOne(
             Query.query(
-                Criteria.where(CategoryDocument.Fields.ownerId).is(ownerId).orOperator().is(null)),
+                new Criteria()
+                    .andOperator(
+                        Criteria.where("_id").is(id),
+                        new Criteria()
+                            .orOperator(
+                                Criteria.where(CategoryDocument.Fields.ownerId).is(ownerId),
+                                Criteria.where(CategoryDocument.Fields.ownerId).isNull()))),
             CategoryDocument.class)
         .map(categoryMapper::toDomain);
   }
