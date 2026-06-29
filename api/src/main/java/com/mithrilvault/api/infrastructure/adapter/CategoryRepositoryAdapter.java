@@ -7,6 +7,7 @@ import com.mithrilvault.api.domain.port.CategoryRepository;
 import com.mithrilvault.api.infrastructure.mapper.CategoryMapper;
 import com.mithrilvault.api.infrastructure.persistence.CategoryMongoRepository;
 import com.mithrilvault.api.infrastructure.persistence.document.CategoryDocument;
+import org.springframework.dao.DuplicateKeyException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +76,7 @@ public class CategoryRepositoryAdapter implements CategoryRepository, CategoryRe
     return mongoRepository
         .save(categoryMapper.toDocument(category))
         .onErrorMap(
-            org.springframework.dao.DuplicateKeyException.class,
+            DuplicateKeyException.class,
             ex -> new ConflictException("Category name already exists"))
         .map(categoryMapper::toDomain);
   }
