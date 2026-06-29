@@ -4,11 +4,14 @@ import com.mithrilvault.api.domain.config.AppProperties;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpCookie;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import reactor.core.publisher.Mono;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -25,7 +28,17 @@ public class SecurityConfig {
         .authorizeExchange(
             exchanges ->
                 exchanges.pathMatchers(publicPaths).permitAll().anyExchange().authenticated())
-        .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> {}))
+        .oauth2ResourceServer(
+            oauth2 ->
+                oauth2
+                    .bearerTokenConverter(
+                        exchange -> {
+                          HttpCookie cookie =
+                              exchange.getRequest().getCookies().getFirst("accessToken");
+                          if (cookie == null) return Mono.empty();
+                          return Mono.just(new BearerTokenAuthenticationToken(cookie.getValue()));
+                        })
+                    .jwt(jwt -> {}))
         .build();
   }
 

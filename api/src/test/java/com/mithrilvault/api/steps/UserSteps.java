@@ -27,6 +27,25 @@ public class UserSteps {
         .getResponseBody();
   }
 
+  public String createAndGetAccessToken() {
+    return webTestClient
+        .post()
+        .uri("/mithril-vault/register")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(RegisterUserCommands.valid())
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .returnResult(AuthResponse.class)
+        .getResponseHeaders()
+        .get("Set-Cookie")
+        .stream()
+        .filter(c -> c.startsWith("accessToken="))
+        .findFirst()
+        .map(c -> c.split(";")[0].substring("accessToken=".length()))
+        .orElseThrow(() -> new AssertionError("accessToken cookie not found"));
+  }
+
   public String createAndGetRefreshToken() {
     return webTestClient
         .post()
