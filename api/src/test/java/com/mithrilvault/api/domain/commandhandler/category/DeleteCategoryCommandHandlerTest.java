@@ -9,13 +9,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.mithrilvault.api.domain.command.category.DeleteCategoryCommand;
 import com.mithrilvault.api.domain.config.SystemCategoryIds;
 import com.mithrilvault.api.domain.exception.ForbiddenException;
 import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
 import com.mithrilvault.api.domain.port.CategoryRepository;
+import com.mithrilvault.api.fixture.model.Categories;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +29,8 @@ import reactor.test.StepVerifier;
 @ExtendWith(MockitoExtension.class)
 class DeleteCategoryCommandHandlerTest {
 
+  private static final String OUTROS_ID = "outros-fixture-id";
+
   @Mock private CategoryRepository categoryRepository;
   @Mock private CategoryReadRepository categoryReadRepository;
   @Mock private SystemCategoryIds systemCategoryIds;
@@ -40,40 +42,31 @@ class DeleteCategoryCommandHandlerTest {
     handler =
         new DeleteCategoryCommandHandler(
             categoryRepository, categoryReadRepository, systemCategoryIds);
-    lenient().when(systemCategoryIds.getOutrosId()).thenReturn("outros-id");
+    lenient().when(systemCategoryIds.getOutrosId()).thenReturn(OUTROS_ID);
   }
 
   @Test
-  void deletesOwnedCategoryAndItsChildren() {
-    Category parent =
-        Category.builder().id("cat-1").name("Pets").ownerId("owner-1").isSystem(false).build();
-    Category child =
-        Category.builder()
-            .id("child-1")
-            .name("Ração")
-            .parentId("cat-1")
-            .ownerId("owner-1")
-            .isSystem(false)
-            .build();
+  void deletesOwnedCategoryAndReassignsChildren() {
+    Category parent = Categories.userTopLevel();
+    Category child = Categories.userChild(parent.id());
 
-    when(categoryReadRepository.findById("cat-1")).thenReturn(Mono.just(parent));
-    when(categoryReadRepository.findChildrenByParentId("cat-1")).thenReturn(Flux.just(child));
+    when(categoryReadRepository.findById(parent.id())).thenReturn(Mono.just(parent));
+    when(categoryReadRepository.findChildrenByParentId(parent.id())).thenReturn(Flux.just(child));
     when(categoryRepository.deleteWithReassignment(
-            eq("cat-1"), eq(List.of("child-1")), eq("outros-id")))
+            eq(parent.id()), eq(List.of(child.id())), eq(OUTROS_ID)))
         .thenReturn(Mono.empty());
 
-    StepVerifier.create(handler.handle(new DeleteCategoryCommand("cat-1", "owner-1")))
-        .verifyComplete();
+    StepVerifier.create(handler.handle(parent.id(), Categories.DEFAULT_OWNER_ID)).verifyComplete();
 
-    verify(categoryRepository).deleteWithReassignment("cat-1", List.of("child-1"), "outros-id");
+    verify(categoryRepository).deleteWithReassignment(parent.id(), List.of(child.id()), OUTROS_ID);
   }
 
   @Test
   void throwsForbiddenForSystemCategory() {
-    Category system = Category.builder().id("sys-1").name("Alimentação").isSystem(true).build();
-    when(categoryReadRepository.findById("sys-1")).thenReturn(Mono.just(system));
+    Category system = Categories.systemTopLevel();
+    when(categoryReadRepository.findById(system.id())).thenReturn(Mono.just(system));
 
-    StepVerifier.create(handler.handle(new DeleteCategoryCommand("sys-1", "owner-1")))
+    StepVerifier.create(handler.handle(system.id(), Categories.DEFAULT_OWNER_ID))
         .expectError(ForbiddenException.class)
         .verify();
 
@@ -82,11 +75,10 @@ class DeleteCategoryCommandHandlerTest {
 
   @Test
   void throwsNotFoundWhenNotOwned() {
-    Category other =
-        Category.builder().id("cat-1").name("X").ownerId("other").isSystem(false).build();
-    when(categoryReadRepository.findById("cat-1")).thenReturn(Mono.just(other));
+    Category other = Categories.userTopLevel(Categories.OTHER_OWNER_ID);
+    when(categoryReadRepository.findById(other.id())).thenReturn(Mono.just(other));
 
-    StepVerifier.create(handler.handle(new DeleteCategoryCommand("cat-1", "owner-1")))
+    StepVerifier.create(handler.handle(other.id(), Categories.DEFAULT_OWNER_ID))
         .expectError(NotFoundException.class)
         .verify();
   }
@@ -95,7 +87,7 @@ class DeleteCategoryCommandHandlerTest {
   void throwsNotFoundWhenCategoryDoesNotExist() {
     when(categoryReadRepository.findById("missing-id")).thenReturn(Mono.empty());
 
-    StepVerifier.create(handler.handle(new DeleteCategoryCommand("missing-id", "owner-1")))
+    StepVerifier.create(handler.handle("missing-id", Categories.DEFAULT_OWNER_ID))
         .expectError(NotFoundException.class)
         .verify();
 

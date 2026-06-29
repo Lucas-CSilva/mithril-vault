@@ -6,11 +6,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.mithrilvault.api.domain.command.category.CreateCategoryCommand;
 import com.mithrilvault.api.domain.exception.DomainException;
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
 import com.mithrilvault.api.domain.port.CategoryRepository;
+import com.mithrilvault.api.fixture.command.category.CreateCategoryCommands;
+import com.mithrilvault.api.fixture.model.Categories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,11 +40,11 @@ class CreateCategoryCommandHandlerTest {
             inv -> Mono.just(((Category) inv.getArgument(0)).toBuilder().id("new-id").build()));
 
     StepVerifier.create(
-            handler.handle(new CreateCategoryCommand("Pets", null, "🐾", "#A3BE8C", "owner-1")))
+            handler.handle(CreateCategoryCommands.topLevel(), Categories.DEFAULT_OWNER_ID))
         .assertNext(
             cat -> {
-              assertThat(cat.name()).isEqualTo("Pets");
-              assertThat(cat.ownerId()).isEqualTo("owner-1");
+              assertThat(cat.name()).isEqualTo(CreateCategoryCommands.DEFAULT_NAME);
+              assertThat(cat.ownerId()).isEqualTo(Categories.DEFAULT_OWNER_ID);
               assertThat(cat.isSystem()).isFalse();
             })
         .verifyComplete();
@@ -51,8 +52,8 @@ class CreateCategoryCommandHandlerTest {
 
   @Test
   void savesSubcategoryWhenParentIsTopLevel() {
-    Category parent = Category.builder().id("parent-1").name("Alimentação").isSystem(true).build();
-    when(categoryReadRepository.findVisibleById("parent-1", "owner-1"))
+    Category parent = Categories.systemTopLevel();
+    when(categoryReadRepository.findVisibleById(parent.id(), Categories.DEFAULT_OWNER_ID))
         .thenReturn(Mono.just(parent));
     when(categoryRepository.save(any()))
         .thenAnswer(
@@ -60,23 +61,20 @@ class CreateCategoryCommandHandlerTest {
 
     StepVerifier.create(
             handler.handle(
-                new CreateCategoryCommand("Orgânicos", "parent-1", null, null, "owner-1")))
-        .assertNext(
-            cat -> {
-              assertThat(cat.parentId()).isEqualTo("parent-1");
-            })
+                CreateCategoryCommands.withParent(parent.id()), Categories.DEFAULT_OWNER_ID))
+        .assertNext(cat -> assertThat(cat.parentId()).isEqualTo(parent.id()))
         .verifyComplete();
   }
 
   @Test
   void rejectsSubcategoryWhenParentIsAlreadyAChild() {
-    Category alreadyChild =
-        Category.builder().id("child-1").name("Delivery").parentId("some-parent").build();
-    when(categoryReadRepository.findVisibleById("child-1", "owner-1"))
+    Category alreadyChild = Categories.userChild("some-parent-id");
+    when(categoryReadRepository.findVisibleById(alreadyChild.id(), Categories.DEFAULT_OWNER_ID))
         .thenReturn(Mono.just(alreadyChild));
 
     StepVerifier.create(
-            handler.handle(new CreateCategoryCommand("Sub", "child-1", null, null, "owner-1")))
+            handler.handle(
+                CreateCategoryCommands.withParent(alreadyChild.id()), Categories.DEFAULT_OWNER_ID))
         .expectError(DomainException.class)
         .verify();
 
@@ -85,11 +83,15 @@ class CreateCategoryCommandHandlerTest {
 
   @Test
   void rejectsWhenParentNotVisible() {
-    when(categoryReadRepository.findVisibleById("ghost-id", "owner-1")).thenReturn(Mono.empty());
+    String ghostId = "ghost-parent-id";
+    when(categoryReadRepository.findVisibleById(ghostId, Categories.DEFAULT_OWNER_ID))
+        .thenReturn(Mono.empty());
 
     StepVerifier.create(
-            handler.handle(new CreateCategoryCommand("Sub", "ghost-id", null, null, "owner-1")))
+            handler.handle(CreateCategoryCommands.withParent(ghostId), Categories.DEFAULT_OWNER_ID))
         .expectError(DomainException.class)
         .verify();
+
+    verify(categoryRepository, never()).save(any());
   }
 }

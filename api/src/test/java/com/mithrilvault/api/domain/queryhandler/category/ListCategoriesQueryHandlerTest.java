@@ -4,7 +4,7 @@ import static org.mockito.Mockito.when;
 
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
-import com.mithrilvault.api.domain.query.category.ListCategoriesQuery;
+import com.mithrilvault.api.fixture.model.Categories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,14 +26,14 @@ class ListCategoriesQueryHandlerTest {
   }
 
   @Test
-  void returnsAllVisibleCategories() {
-    Category system = Category.builder().id("sys-1").name("Alimentação").isSystem(true).build();
-    Category owned =
-        Category.builder().id("usr-1").name("Pets").isSystem(false).ownerId("owner-1").build();
+  void returnsSystemAndOwnedCategories() {
+    Category system = Categories.systemTopLevel();
+    Category owned = Categories.userTopLevel();
 
-    when(readRepository.findAllVisibleToOwner("owner-1")).thenReturn(Flux.just(system, owned));
+    when(readRepository.findAllVisibleToOwner(Categories.DEFAULT_OWNER_ID))
+        .thenReturn(Flux.just(system, owned));
 
-    StepVerifier.create(handler.handle(new ListCategoriesQuery("owner-1")))
+    StepVerifier.create(handler.handle(Categories.DEFAULT_OWNER_ID))
         .expectNext(system)
         .expectNext(owned)
         .verifyComplete();
@@ -41,8 +41,9 @@ class ListCategoriesQueryHandlerTest {
 
   @Test
   void returnsEmptyFluxWhenNoCategories() {
-    when(readRepository.findAllVisibleToOwner("owner-1")).thenReturn(Flux.empty());
+    when(readRepository.findAllVisibleToOwner(Categories.DEFAULT_OWNER_ID))
+        .thenReturn(Flux.empty());
 
-    StepVerifier.create(handler.handle(new ListCategoriesQuery("owner-1"))).verifyComplete();
+    StepVerifier.create(handler.handle(Categories.DEFAULT_OWNER_ID)).verifyComplete();
   }
 }

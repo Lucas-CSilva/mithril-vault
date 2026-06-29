@@ -6,12 +6,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.mithrilvault.api.domain.command.category.UpdateCategoryCommand;
 import com.mithrilvault.api.domain.exception.ForbiddenException;
 import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.model.Category;
 import com.mithrilvault.api.domain.port.CategoryReadRepository;
 import com.mithrilvault.api.domain.port.CategoryRepository;
+import com.mithrilvault.api.fixture.command.category.UpdateCategoryCommands;
+import com.mithrilvault.api.fixture.model.Categories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,25 +36,25 @@ class UpdateCategoryCommandHandlerTest {
 
   @Test
   void updatesOwnedCategory() {
-    Category existing =
-        Category.builder().id("cat-1").name("Pets").ownerId("owner-1").isSystem(false).build();
-    when(categoryReadRepository.findById("cat-1")).thenReturn(Mono.just(existing));
+    Category existing = Categories.userTopLevel();
+    when(categoryReadRepository.findById(existing.id())).thenReturn(Mono.just(existing));
     when(categoryRepository.save(any())).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
     StepVerifier.create(
-            handler.handle(new UpdateCategoryCommand("cat-1", "Animals", null, null, "owner-1")))
-        .assertNext(cat -> assertThat(cat.name()).isEqualTo("Animals"))
+            handler.handle(
+                existing.id(), UpdateCategoryCommands.withName(), Categories.DEFAULT_OWNER_ID))
+        .assertNext(cat -> assertThat(cat.name()).isEqualTo(UpdateCategoryCommands.UPDATED_NAME))
         .verifyComplete();
   }
 
   @Test
   void throwsForbiddenForSystemCategory() {
-    Category system =
-        Category.builder().id("sys-1").name("Alimentação").isSystem(true).ownerId(null).build();
-    when(categoryReadRepository.findById("sys-1")).thenReturn(Mono.just(system));
+    Category system = Categories.systemTopLevel();
+    when(categoryReadRepository.findById(system.id())).thenReturn(Mono.just(system));
 
     StepVerifier.create(
-            handler.handle(new UpdateCategoryCommand("sys-1", "New Name", null, null, "owner-1")))
+            handler.handle(
+                system.id(), UpdateCategoryCommands.withName(), Categories.DEFAULT_OWNER_ID))
         .expectError(ForbiddenException.class)
         .verify();
 
@@ -62,12 +63,12 @@ class UpdateCategoryCommandHandlerTest {
 
   @Test
   void throwsNotFoundWhenCategoryBelongsToAnotherUser() {
-    Category other =
-        Category.builder().id("cat-1").name("Pets").ownerId("other-owner").isSystem(false).build();
-    when(categoryReadRepository.findById("cat-1")).thenReturn(Mono.just(other));
+    Category other = Categories.userTopLevel(Categories.OTHER_OWNER_ID);
+    when(categoryReadRepository.findById(other.id())).thenReturn(Mono.just(other));
 
     StepVerifier.create(
-            handler.handle(new UpdateCategoryCommand("cat-1", "Stolen", null, null, "owner-1")))
+            handler.handle(
+                other.id(), UpdateCategoryCommands.withName(), Categories.DEFAULT_OWNER_ID))
         .expectError(NotFoundException.class)
         .verify();
   }
@@ -77,7 +78,7 @@ class UpdateCategoryCommandHandlerTest {
     when(categoryReadRepository.findById("ghost")).thenReturn(Mono.empty());
 
     StepVerifier.create(
-            handler.handle(new UpdateCategoryCommand("ghost", "X", null, null, "owner-1")))
+            handler.handle("ghost", UpdateCategoryCommands.withName(), Categories.DEFAULT_OWNER_ID))
         .expectError(NotFoundException.class)
         .verify();
   }
