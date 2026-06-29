@@ -15,7 +15,7 @@ import org.testcontainers.mongodb.MongoDBContainer;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 public abstract class AbstractIntegrationTest {
 
-  static final MongoDBContainer mongodb = new MongoDBContainer("mongo:8");
+  static final MongoDBContainer mongodb = new MongoDBContainer("mongo:8").withReplicaSet();
 
   static {
     mongodb.start();
@@ -23,7 +23,7 @@ public abstract class AbstractIntegrationTest {
 
   @DynamicPropertySource
   static void mongoProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.mongodb.uri", mongodb::getReplicaSetUrl);
+    registry.add("spring.mongodb.uri", () -> mongodb.getReplicaSetUrl() + "?directConnection=true");
   }
 
   @LocalServerPort private int port;
