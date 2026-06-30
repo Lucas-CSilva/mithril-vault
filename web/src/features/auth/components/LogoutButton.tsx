@@ -11,7 +11,7 @@ export function LogoutButton() {
     <button
       onClick={logout}
       aria-label="Sair"
-      className="flex items-center gap-[7px] rounded-lg px-3 py-2 text-sm text-[#4C566A] transition-colors hover:bg-[#D8DEE9] hover:text-[#2E3440]"
+      className="text-muted-foreground hover:bg-input hover:text-foreground flex items-center gap-[7px] rounded-lg px-3 py-2 text-sm transition-colors"
     >
       <LogOut size={16} />
       Sair
