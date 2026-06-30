@@ -24,7 +24,7 @@ export default function NotFound() {
               height="19"
               rx="3.5"
               transform="rotate(45 16 2.5)"
-              fill="#5E81AC"
+              style={{ fill: "var(--frost-deep)" }}
             />
             <rect
               x="16"
