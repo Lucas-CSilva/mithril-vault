@@ -34,18 +34,16 @@ function LogoLight() {
         rx="2"
         transform="rotate(45 16 8.9)"
         fill="none"
-        stroke="#5E81AC"
+        style={{ stroke: "var(--frost-teal)", strokeOpacity: 0.9 }}
         strokeWidth="1.6"
-        strokeOpacity="0.9"
       />
       <line
         x1="16"
         y1="2.5"
         x2="16"
         y2="29.5"
-        stroke="#5E81AC"
+        style={{ stroke: "var(--frost-teal)", strokeOpacity: 0.35 }}
         strokeWidth="1.1"
-        strokeOpacity="0.35"
       />
     </svg>
   );
@@ -62,7 +60,7 @@ export function BrandPanel({
       className="relative hidden flex-col overflow-hidden px-[52px] pt-[46px] pb-[40px] text-white lg:flex"
       style={{
         background:
-          "radial-gradient(120% 80% at 12% 8%, rgba(136,192,208,.30) 0%, rgba(136,192,208,0) 42%), linear-gradient(157deg, #5E81AC 0%, #4A6791 38%, #3B4456 74%, #333A48 100%)",
+          "radial-gradient(120% 80% at 12% 8%, var(--brand-panel-haze) 0%, rgba(122,138,164,0) 42%), linear-gradient(157deg, var(--frost-deep) 0%, var(--frost-shade) 38%, var(--frost-dark) 74%, var(--ink) 100%)",
       }}
     >
       {/* Diamond lattice overlay */}
