@@ -41,7 +41,7 @@ const STRENGTH = [
     color: "var(--warning)",
     hint: "Adicione números ou símbolos",
   },
-  { label: "Boa", color: "var(--nord-13)", hint: "Quase lá" },
+  { label: "Boa", color: "var(--gold)", hint: "Quase lá" },
   { label: "Forte", color: "var(--success)", hint: "Senha sólida" },
 ];
 
