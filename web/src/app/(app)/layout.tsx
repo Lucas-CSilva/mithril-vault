@@ -27,10 +27,10 @@ const navItems = [
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-[#ECEFF4]">
-      <aside className="flex w-64 flex-col border-r border-[#D8DEE9] bg-[#E5E9F0]">
+    <div className="bg-background flex h-screen">
+      <aside className="border-border bg-secondary flex w-64 flex-col border-r">
         <div className="flex h-16 items-center px-6">
-          <span className="text-lg font-semibold text-[#2E3440]">
+          <span className="text-foreground text-lg font-semibold">
             Mithril Vault
           </span>
         </div>
@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-[#3B4252] transition-colors hover:bg-[#D8DEE9] hover:text-[#2E3440]"
+              className="text-foreground-2 hover:bg-input hover:text-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
             >
               <Icon size={18} />
               {label}
@@ -48,10 +48,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
       </aside>
       <div className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-16 items-center justify-end gap-2 border-b border-[#D8DEE9] bg-[#E5E9F0] px-6">
+        <header className="border-border bg-secondary flex h-16 items-center justify-end gap-2 border-b px-6">
           <button
             aria-label="Notificações"
-            className="rounded-full p-2 text-[#4C566A] transition-colors hover:bg-[#D8DEE9]"
+            className="text-muted-foreground hover:bg-input rounded-full p-2 transition-colors"
           >
             <Bell size={20} />
           </button>
