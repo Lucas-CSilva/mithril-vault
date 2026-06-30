@@ -21,39 +21,51 @@
   padding: 46px 52px 40px;
   color: #fff;
   background:
-    radial-gradient(120% 80% at 12% 8%, rgba(136,192,208,.30) 0%, rgba(136,192,208,0) 42%),
-    linear-gradient(157deg, #5E81AC 0%, #4A6791 38%, #3B4456 74%, #333A48 100%);
+    radial-gradient(120% 80% at 14% 6%, var(--brand-panel-haze) 0%, rgba(122,138,164,0) 44%),
+    linear-gradient(157deg, var(--frost-deep) 0%, var(--frost-shade) 40%, var(--frost-dark) 75%, var(--ink) 100%);
 }
-/* faint diamond lattice */
+/* faint dot lattice (no diamonds) */
 .brand-panel::before {
   content: '';
   position: absolute; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cpath d='M36 3 69 36 36 69 3 36Z' fill='none' stroke='%23ffffff' stroke-opacity='0.045' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: 72px 72px;
-  mask-image: linear-gradient(150deg, #000 0%, transparent 78%);
-  -webkit-mask-image: linear-gradient(150deg, #000 0%, transparent 78%);
+  background-image: radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(150deg, #000 0%, transparent 80%);
+  -webkit-mask-image: linear-gradient(150deg, #000 0%, transparent 80%);
   pointer-events: none;
 }
-/* large outline diamond, bottom-right */
-.brand-diamond {
+/* concentric ring motif, bottom-right (echoes the seal) */
+.brand-ring {
   position: absolute;
-  right: -120px; bottom: -130px;
-  width: 440px; height: 440px;
-  transform: rotate(45deg);
+  right: -150px; bottom: -160px;
+  width: 460px; height: 460px;
+  border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,.10);
-  border-radius: 56px;
   pointer-events: none;
 }
-.brand-diamond.inner {
-  right: -52px; bottom: -62px;
-  width: 300px; height: 300px;
+.brand-ring.inner {
+  right: -78px; bottom: -88px;
+  width: 320px; height: 320px;
   border-color: rgba(255,255,255,.07);
-  border-radius: 40px;
+}
+
+/* ring-seal mark on the dark panel */
+.brand-seal {
+  position: relative; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid rgba(255,255,255,.85);
+  display: grid; place-items: center;
+  font-family: var(--display); font-weight: 500; color: #fff;
+  line-height: 1;
+}
+.brand-seal { font-size: 15px; }
+.brand-seal::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.35);
 }
 
 .brand-top { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; }
-.brand-word { line-height: 1.04; }
-.brand-word .nm { font-weight: 700; font-size: 17px; letter-spacing: -.015em; white-space: nowrap; }
+.brand-word { line-height: 1.08; }
+.brand-word .nm { font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: 0; white-space: nowrap; }
 .brand-word .sub {
   font-family: var(--mono); font-size: 9.5px; letter-spacing: .18em;
   text-transform: uppercase; color: rgba(255,255,255,.62); margin-top: 3px;
@@ -69,8 +81,9 @@
   color: rgba(255,255,255,.66); margin-bottom: 18px;
 }
 .brand-head {
-  font-size: 33px; line-height: 1.12; font-weight: 700;
-  letter-spacing: -.025em; text-wrap: balance;
+  font-family: var(--display);
+  font-size: 35px; line-height: 1.14; font-weight: 500;
+  letter-spacing: -.015em; text-wrap: balance;
 }
 .brand-lede {
   margin-top: 16px; font-size: 15px; line-height: 1.55;
@@ -116,8 +129,9 @@
   letter-spacing: .16em; text-transform: uppercase; color: var(--ink-4);
 }
 .auth-title {
-  font-size: 28px; font-weight: 700; letter-spacing: -.025em;
-  color: var(--ink); margin-top: 12px; line-height: 1.1;
+  font-family: var(--display);
+  font-size: 30px; font-weight: 600; letter-spacing: -.01em;
+  color: var(--ink); margin-top: 12px; line-height: 1.12;
 }
 .auth-lede { margin-top: 8px; font-size: 14.5px; color: var(--ink-3); line-height: 1.5; }
 
@@ -204,7 +218,7 @@
 .auth-banner {
   display: flex; align-items: flex-start; gap: 10px;
   padding: 12px 14px; border-radius: var(--r-md);
-  background: var(--neg-bg); border: 1px solid #EAD2D4; color: var(--neg-ink);
+  background: var(--neg-bg); border: 1px solid var(--neg-line); color: var(--neg-ink);
   font-size: 13px; line-height: 1.4;
 }
 .auth-banner svg { flex-shrink: 0; margin-top: 1px; }
@@ -241,14 +255,27 @@
     radial-gradient(90% 70% at 50% -10%, var(--accent-bg) 0%, rgba(0,0,0,0) 55%),
     var(--bg);
 }
+/* ring-seal mark on light backgrounds (error pages) */
+.mark-seal {
+  position: relative; flex-shrink: 0;
+  border-radius: 50%; border: 1px solid var(--accent);
+  display: grid; place-items: center;
+  font-family: var(--display); font-weight: 500; font-size: 15px;
+  color: var(--accent); line-height: 1;
+}
+.mark-seal::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%;
+  border: 1px solid var(--line-strong);
+}
+
 .error-watermark {
-  position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%) rotate(45deg);
-  width: 560px; height: 560px; border-radius: 96px;
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%,-50%);
+  width: 560px; height: 560px; border-radius: 50%;
   border: 1.5px solid var(--line-2);
   opacity: .5; pointer-events: none;
 }
 .error-watermark.inner {
-  width: 380px; height: 380px; border-radius: 72px; border-color: var(--line);
+  width: 380px; height: 380px; border-radius: 50%; border-color: var(--line);
 }
 .error-card {
   position: relative; z-index: 2; width: 100%; max-width: 460px; text-align: center;
@@ -257,14 +284,14 @@
   display: inline-flex; align-items: center; gap: 10px; margin-bottom: 40px;
 }
 .error-glyph {
-  width: 60px; height: 60px; border-radius: 18px; margin: 0 auto 22px;
+  width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 22px;
   display: grid; place-items: center;
   background: var(--surface); border: 1px solid var(--line);
   box-shadow: var(--sh-md);
 }
 .error-code {
-  font-family: var(--mono); font-weight: 700; font-size: 78px; line-height: 1;
-  letter-spacing: -.04em; color: var(--ink);
+  font-family: var(--display); font-weight: 500; font-size: 82px; line-height: 1;
+  letter-spacing: -.02em; color: var(--ink);
   display: inline-flex; align-items: baseline;
 }
 .error-code .accent { color: var(--frost-deep); }
