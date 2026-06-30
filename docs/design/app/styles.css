@@ -1,71 +1,96 @@
 /* ============================================================
-   Mithril Vault — Quiet-luxury Nord design system
+   Mithril Vault — Mithril design system
+   Quiet-luxury editorial: silver paper · ink-navy · Spectral serif.
+   Tokens under :root / [data-theme="mithril"]. One theme only.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..800;1,400..600&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap');
 
 :root {
-  /* ---- Nord, refined ---------------------------------------- */
-  /* Snow Storm canvas — cooler, softer than raw Nord */
-  --bg:          #F3F5F9;
-  --bg-tint:     #EEF1F6;
-  --surface:     #FFFFFF;
-  --surface-2:   #F6F8FB;
-  --surface-3:   #ECEFF4;
-
-  /* Polar Night ink */
-  --ink:         #2E3440;
-  --ink-2:       #434C5E;
-  --ink-3:       #6A7382;
-  --ink-4:       #99A1B0;
-
-  /* Hairlines */
-  --line:        #E3E8F0;
-  --line-2:      #D8DEE9;
-  --line-strong: #CDD5E1;
-
-  /* Frost — primary accent family */
-  --frost-deep:  #5E81AC;
-  --frost:       #6C8DB5;
-  --frost-soft:  #81A1C1;
-  --frost-teal:  #88C0D0;
-  --frost-pine:  #8FBCBB;
-  --accent:      var(--frost-deep);
-
-  /* Aurora — money + status semantics (slightly deepened for AA on white) */
-  --pos:         #7E9F69;   /* credit / positive — Aurora green */
-  --pos-ink:     #5C7B49;
-  --pos-bg:      #EDF2E6;
-  --neg:         #BF616A;   /* debit / negative — Aurora red */
-  --neg-ink:     #A04852;
-  --neg-bg:      #F8ECEC;
-  --warn:        #C5854F;   /* Aurora orange */
-  --warn-bg:     #F8F0E6;
-  --gold:        #C9A85C;   /* Aurora yellow, muted */
-  --plum:        #A98AA3;   /* Aurora purple */
-
-  /* Accent washes */
-  --accent-bg:   #ECF1F7;
-  --accent-line: #D5E0EC;
-
-  /* Shadows — soft, layered, low alpha */
-  --sh-sm:  0 1px 2px rgba(46,52,64,.05), 0 1px 1px rgba(46,52,64,.04);
-  --sh-md:  0 2px 4px rgba(46,52,64,.04), 0 6px 16px rgba(46,52,64,.06);
-  --sh-lg:  0 4px 8px rgba(46,52,64,.05), 0 18px 40px rgba(46,52,64,.10);
-  --sh-xl:  0 8px 16px rgba(46,52,64,.06), 0 30px 60px rgba(46,52,64,.13);
-
-  /* Radii */
+  /* ---- Structural tokens (shared across themes) ------------- */
   --r-xs: 7px;
   --r-sm: 10px;
   --r-md: 14px;
   --r-lg: 18px;
   --r-xl: 24px;
 
-  /* Type */
-  --sans: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --sh-sm:  0 1px 2px rgba(20,22,30,.05), 0 1px 1px rgba(20,22,30,.04);
+  --sh-md:  0 2px 4px rgba(20,22,30,.04), 0 6px 16px rgba(20,22,30,.06);
+  --sh-lg:  0 4px 8px rgba(20,22,30,.05), 0 18px 40px rgba(20,22,30,.10);
+  --sh-xl:  0 8px 16px rgba(20,22,30,.06), 0 30px 60px rgba(20,22,30,.13);
 
   --sidebar-w: 256px;
+}
+
+/* ============================================================
+   THEME — MITHRIL · quiet-luxury editorial  (default)
+   Near-white silver paper · ink-navy · pewter · Spectral serif
+   ============================================================ */
+:root, [data-theme="mithril"] {
+  --bg:          #F5F6F6;
+  --bg-tint:     #EEEFF0;
+  --surface:     #FFFFFF;
+  --surface-2:   #F4F5F6;
+  --surface-3:   #EBECEE;
+
+  --ink:         #1B2230;
+  --ink-2:       #474E5C;
+  --ink-3:       #767D89;
+  --ink-4:       #A2A7B0;
+
+  --line:        #E6E7EA;
+  --line-2:      #DBDDE1;
+  --line-strong: #C9CCD2;
+
+  --frost-deep:  #3C5070;
+  --frost:       #46597A;
+  --frost-soft:  #6B7C99;
+  --frost-teal:  #5E7A96;
+  --frost-pine:  #8A93A3;
+  --accent:      var(--frost-deep);
+
+  --pos:         #4E7C66;
+  --pos-ink:     #3C6552;
+  --pos-bg:      #E7F0EA;
+  --neg:         #8E3A4B;
+  --neg-ink:     #7C2F3E;
+  --neg-bg:      #F4E9EB;
+  --warn:        #9E7A4E;
+  --warn-bg:     #F2ECE0;
+  --gold:        #9E7A4E;
+  --plum:        #7E6A86;
+
+  --accent-bg:   #EAEDF2;
+  --accent-line: #D6DBE3;
+
+  /* brand panel gradient intermediate stops */
+  --frost-shade:      #2E3E5A;
+  --frost-dark:       #232C3E;
+  /* pre-composed brand panel haze (radial highlight) */
+  --brand-panel-haze: rgba(122, 138, 164, 0.3);
+  /* negative border (auth-banner) */
+  --neg-line:         #EAD2D4;
+
+  --topbar-bg:   rgba(245,246,246,0.86);
+  --hero-grad:   linear-gradient(160deg, #FFFFFF 0%, #F2F4F6 100%);
+  --btn-text:    #FFFFFF;
+
+  --sans:    'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --display: 'Spectral', Georgia, 'Times New Roman', serif;
+  --mono:    'Spline Sans Mono', ui-monospace, Menlo, monospace;
+
+  /* refined corners */
+  --r-xs: 5px;
+  --r-sm: 8px;
+  --r-md: 11px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+
+  /* airy, flat shadows — rely on hairlines */
+  --sh-sm:  0 1px 2px rgba(27,34,48,.04);
+  --sh-md:  0 1px 3px rgba(27,34,48,.05), 0 4px 12px rgba(27,34,48,.04);
+  --sh-lg:  0 2px 6px rgba(27,34,48,.05), 0 14px 32px rgba(27,34,48,.07);
+  --sh-xl:  0 4px 10px rgba(27,34,48,.06), 0 26px 56px rgba(27,34,48,.10);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,9 +105,13 @@ body {
   text-rendering: optimizeLegibility;
   font-size: 15px;
   line-height: 1.45;
+  transition: background .35s ease, color .35s ease;
 }
 
 #root { height: 100%; }
+
+/* Display face for primary headings */
+h1, h2, .mv-display { font-family: var(--display); }
 
 /* tabular figures everywhere by default for UI numbers */
 .num, .mono { font-feature-settings: 'tnum' 1, 'cv01' 1; }
@@ -115,6 +144,7 @@ body { font-feature-settings: 'tnum' 1; }
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm);
+  transition: background .35s ease, border-color .35s ease;
 }
 
 .pill {
