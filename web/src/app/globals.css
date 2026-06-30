@@ -1,103 +1,145 @@
 @import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap");
 
 /* ============================================================================
-   Nord Theme CSS Variables
+   Mithril Design System — CSS Variables
    ============================================================================ */
 
 :root {
-  /* Nord Polar Night - Foregrounds (Light Mode) */
-  --nord-0: #2e3440;
-  --nord-1: #3b4252;
-  --nord-2: #434c5e;
-  --nord-3: #4c566a;
+  /* ---- Mithril palette ---------------------------------------- */
 
-  /* Nord Snow Storm - Backgrounds (Light Mode) */
-  --nord-4: #d8dee9;
-  --nord-5: #e5e9f0;
-  --nord-6: #eceff4;
+  /* Surfaces & paper */
+  --bg: #f5f6f6;
+  --bg-tint: #eeeff0;
+  --surface: #ffffff;
+  --surface-2: #f4f5f6;
+  --surface-3: #ebecee;
 
-  /* Nord Frost - Primary Colors */
-  --nord-7: #8fbcbb;
-  --nord-8: #88c0d0;
-  --nord-9: #81a1c1;
-  --nord-10: #5e81ac;
+  /* Ink (text) */
+  --ink: #1b2230;
+  --ink-2: #474e5c;
+  --ink-3: #767d89;
+  --ink-4: #a2a7b0;
 
-  /* Nord Aurora - Semantic Colors */
-  --nord-11: #bf616a;
-  --nord-12: #d08770;
-  --nord-13: #ebcb8b;
-  --nord-14: #a3be8c;
-  --nord-15: #b48ead;
+  /* Hairlines */
+  --line: #e6e7ea;
+  --line-2: #dbdde1;
+  --line-strong: #c9ccd2;
 
-  /* Semantic mappings */
-  --background: var(--nord-6);
-  --foreground: var(--nord-0);
-  --primary: var(--nord-8);
-  --primary-foreground: var(--nord-6);
-  --secondary: var(--nord-5);
-  --secondary-foreground: var(--nord-0);
-  --success: var(--nord-14);
-  --warning: var(--nord-12);
-  --error: var(--nord-11);
-  --info: var(--nord-9);
+  /* Accent — frost / ink-navy */
+  --frost-deep: #3c5070;
+  --frost: #46597a;
+  --frost-soft: #6b7c99;
+  --frost-teal: #5e7a96;
+  --frost-pine: #8a93a3;
+  --frost-shade: #2e3e5a;
+  --frost-dark: #232c3e;
 
-  /* Shadcn semantic colors */
-  --muted: var(--nord-5);
-  --muted-foreground: var(--nord-3);
-  --accent: var(--nord-4);
-  --accent-foreground: var(--nord-0);
-  --destructive: var(--nord-11);
-  --destructive-foreground: var(--nord-6);
-  --card: #ffffff;
-  --card-foreground: var(--nord-0);
-  --popover: var(--nord-6);
-  --popover-foreground: var(--nord-0);
-  --border: var(--nord-5);
-  --input: var(--nord-4);
-  --ring: var(--nord-10);
+  /* Accent tints */
+  --accent-bg: #eaedf2;
+  --accent-line: #d6dbe3;
 
-  /* Border radius for components (Shadcn compatibility) */
-  --radius: 0.5rem;
+  /* Semantic — money & status */
+  --pos: #4e7c66;
+  --pos-ink: #3c6552;
+  --pos-bg: #e7f0ea;
+  --neg: #8e3a4b;
+  --neg-ink: #7c2f3e;
+  --neg-bg: #f4e9eb;
+  --neg-line: #ead2d4;
+  --warn: #9e7a4e;
+  --warn-bg: #f2ece0;
+  --gold: #9e7a4e;
+  --plum: #7e6a86;
 
-  /* Extended design tokens */
-  --foreground-2: var(--nord-2); /* #434c5e — form labels, secondary headings */
-  --foreground-subtle: #6a7382; /* subtitles, helper text */
-  --foreground-dim: #99a1b0; /* placeholder, disabled text */
+  /* Brand panel */
+  --brand-panel-haze: rgba(122, 138, 164, 0.3);
 
-  --border-strong: #cdd5e1; /* hover-state borders */
-  --ring-bg: #ecf1f7; /* focus ring wash, ghost-link hover */
-  --ring-border: #d5e0ec; /* ghost-link border */
+  /* Typography */
+  --sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --display: "Spectral", Georgia, "Times New Roman", serif;
+  --mono: "Spline Sans Mono", ui-monospace, Menlo, monospace;
 
-  --error-bg: #f8ecec; /* error banner / field background */
-  --error-border: #ead2d4; /* error banner border */
-  --error-foreground: #a04852; /* error text (darker than --destructive) */
+  /* Shape */
+  --r-xs: 5px;
+  --r-sm: 8px;
+  --r-md: 11px;
+  --r-lg: 14px;
+  --r-xl: 18px;
+
+  --sh-sm: 0 1px 2px rgba(27, 34, 48, 0.04);
+  --sh-md: 0 1px 3px rgba(27, 34, 48, 0.05), 0 4px 12px rgba(27, 34, 48, 0.04);
+  --sh-lg: 0 2px 6px rgba(27, 34, 48, 0.05), 0 14px 32px rgba(27, 34, 48, 0.07);
+  --sh-xl: 0 4px 10px rgba(27, 34, 48, 0.06), 0 26px 56px rgba(27, 34, 48, 0.1);
+
+  --sidebar-w: 256px;
+
+  /* ---- Semantic / shadcn-compatible aliases -------------------- */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --primary: var(--frost-deep);
+  --primary-foreground: #ffffff;
+  --secondary: var(--surface-2);
+  --secondary-foreground: var(--ink);
+  --success: var(--pos);
+  --warning: var(--warn);
+  --error: var(--neg);
+  --info: var(--frost-teal);
+
+  --muted: var(--surface-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--accent-bg);
+  --accent-foreground: var(--frost-deep);
+  --destructive: var(--neg);
+  --destructive-foreground: #ffffff;
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --border: var(--line);
+  --input: var(--line-2);
+  --ring: var(--frost-deep);
+  --radius: 0.6875rem;
+
+  /* ---- Extended tokens (component-level) ---------------------- */
+  --foreground-2: var(--ink-2);
+  --foreground-subtle: var(--ink-3);
+  --foreground-dim: var(--ink-4);
+  --border-strong: var(--line-strong);
+  --ring-bg: var(--accent-bg);
+  --ring-border: var(--accent-line);
+  --error-bg: var(--neg-bg);
+  --error-border: var(--neg-line);
+  --error-foreground: var(--neg-ink);
 }
 
 @theme inline {
-  /* Map CSS variables to Tailwind utilities */
+  /* Semantic aliases (keep existing Tailwind classes working) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
   --color-info: var(--info);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-  /* Extended design token utilities */
+  /* Extended token utilities */
   --color-foreground-2: var(--foreground-2);
   --color-foreground-subtle: var(--foreground-subtle);
   --color-foreground-dim: var(--foreground-dim);
@@ -107,6 +149,40 @@
   --color-error-bg: var(--error-bg);
   --color-error-border: var(--error-border);
   --color-error-foreground: var(--error-foreground);
+
+  /* Direct Mithril token utilities (for error pages and explicit references) */
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-4: var(--ink-4);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-line-strong: var(--line-strong);
+  --color-frost-deep: var(--frost-deep);
+  --color-frost: var(--frost);
+  --color-frost-soft: var(--frost-soft);
+  --color-frost-teal: var(--frost-teal);
+  --color-frost-pine: var(--frost-pine);
+  --color-pos: var(--pos);
+  --color-pos-ink: var(--pos-ink);
+  --color-pos-bg: var(--pos-bg);
+  --color-neg: var(--neg);
+  --color-neg-ink: var(--neg-ink);
+  --color-neg-bg: var(--neg-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-gold: var(--gold);
+  --color-plum: var(--plum);
+  --color-accent-bg: var(--accent-bg);
+  --color-accent-line: var(--accent-line);
+
+  /* Font utilities */
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+  --font-display: var(--display);
 }
 
 /* ============================================================================
@@ -116,13 +192,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--sans);
   font-feature-settings:
     "rlig" 1,
-    "calt" 1;
+    "calt" 1,
+    "tnum" 1;
 }
 
 /* Smooth transitions for interactive elements */
@@ -131,8 +205,7 @@ a {
   transition: all 150ms ease-in-out;
 }
 
-/* Focus ring styling with Nord colors */
 *:focus-visible {
-  outline: 2px solid var(--primary);
+  outline: 2px solid var(--frost-deep);
   outline-offset: 2px;
 }
