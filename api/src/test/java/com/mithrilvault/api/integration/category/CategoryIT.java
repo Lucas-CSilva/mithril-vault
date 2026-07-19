@@ -10,7 +10,6 @@ import com.mithrilvault.api.infrastructure.persistence.CategoryMongoRepository;
 import com.mithrilvault.api.infrastructure.persistence.RefreshTokenMongoRepository;
 import com.mithrilvault.api.infrastructure.persistence.UserMongoRepository;
 import com.mithrilvault.api.infrastructure.persistence.document.CategoryDocument;
-import com.mithrilvault.api.steps.CategorySteps;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +21,6 @@ class CategoryIT extends AbstractIntegrationTest {
   @Autowired private UserMongoRepository userMongoRepository;
   @Autowired private RefreshTokenMongoRepository refreshTokenMongoRepository;
 
-  private CategorySteps categorySteps;
-
   @BeforeEach
   void setUp() {
     categoryMongoRepository.deleteAll().block();
@@ -31,7 +28,7 @@ class CategoryIT extends AbstractIntegrationTest {
     refreshTokenMongoRepository.deleteAll().block();
 
     String accessToken = userSteps.createAndGetAccessToken();
-    categorySteps = new CategorySteps(webTestClient, accessToken);
+    categorySteps.setAccessToken(accessToken);
   }
 
   // ── GET /categories ───────────────────────────────────────────────────

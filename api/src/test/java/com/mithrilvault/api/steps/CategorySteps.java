@@ -3,19 +3,20 @@ package com.mithrilvault.api.steps;
 import com.mithrilvault.api.application.response.CategoryResponse;
 import com.mithrilvault.api.domain.command.category.CreateCategoryCommand;
 import com.mithrilvault.api.domain.command.category.UpdateCategoryCommand;
+import lombok.Setter;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+@Setter
 public class CategorySteps {
 
   private static final String BASE_URI = "/mithril-vault/categories";
 
-  private final WebTestClient webTestClient;
-  private final String accessToken;
+  private WebTestClient webTestClient;
+  private String accessToken;
 
-  public CategorySteps(WebTestClient webTestClient, String accessToken) {
+  public void init(WebTestClient webTestClient) {
     this.webTestClient = webTestClient;
-    this.accessToken = accessToken;
   }
 
   public WebTestClient.ResponseSpec list() {

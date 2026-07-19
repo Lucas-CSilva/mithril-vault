@@ -18,14 +18,14 @@ public class CreateCategoryCommandHandler {
   private final CategoryRepository categoryRepository;
   private final CategoryReadRepository categoryReadRepository;
 
-  public Mono<Category> handle(CreateCategoryCommand command) {
+  public Mono<Category> handle(CreateCategoryCommand command, String ownerId) {
 
     if (command.parentId() == null) {
-      return save(command, null);
+      return save(command, ownerId, null);
     }
 
     return categoryReadRepository
-        .findVisibleById(command.parentId(), command.ownerId())
+        .findVisibleById(command.parentId(), ownerId)
         .switchIfEmpty(Mono.error(new NotFoundException("Parent category not found")))
         .flatMap(
             parent -> {
@@ -35,11 +35,12 @@ public class CreateCategoryCommandHandler {
                         ErrorCode.VALIDATION_FAILED,
                         "Cannot create a subcategory of a subcategory (max depth = 1)"));
               }
-              return save(command, parent.id());
+              return save(command, ownerId, parent.id());
             });
   }
 
-  private Mono<Category> save(CreateCategoryCommand command, String resolvedParentId) {
+  private Mono<Category> save(
+      CreateCategoryCommand command, String ownerId, String resolvedParentId) {
     Category category =
         Category.builder()
             .name(command.name())
@@ -47,7 +48,7 @@ public class CreateCategoryCommandHandler {
             .icon(command.icon())
             .color(command.color())
             .isSystem(false)
-            .ownerId(command.ownerId())
+            .ownerId(ownerId)
             .build();
     return categoryRepository.save(category);
   }

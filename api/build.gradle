@@ -65,12 +65,16 @@ dependencies {
 	implementation libs.spring.boot.validation
 	implementation libs.springdoc.webflux
 	implementation libs.mapstruct.core
-	implementation 'org.springframework.security:spring-security-oauth2-jose'
+	implementation libs.spring.security.oauth2.jose
 	implementation libs.spring.boot.tracing.brave
-	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
-	implementation 'io.micrometer:context-propagation'
+	implementation libs.micrometer.tracing.bridge.brave
+	implementation libs.micrometer.context.propagation
 	implementation libs.logstash.logback.encoder
 	implementation libs.spring.cloud.aws.secrets
+
+	implementation platform(libs.mongock.bom)
+	implementation libs.mongock.springboot
+	implementation libs.mongock.mongodb.springdata
 
 	// ── Development ───────────────────────────
 	developmentOnly libs.spring.boot.devtools

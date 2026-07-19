@@ -1,5 +1,6 @@
 package com.mithrilvault.api.config;
 
+import com.mithrilvault.api.steps.CategorySteps;
 import com.mithrilvault.api.steps.UserSteps;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,10 +31,12 @@ public abstract class AbstractIntegrationTest {
 
   protected WebTestClient webTestClient;
   protected UserSteps userSteps = new UserSteps();
+  protected CategorySteps categorySteps = new CategorySteps();
 
   @BeforeEach
   void initWebTestClient() {
     webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
     userSteps.init(webTestClient);
+    categorySteps.init(webTestClient);
   }
 }

@@ -18,9 +18,9 @@ public class UpdateCategoryCommandHandler {
   private final CategoryRepository categoryRepository;
   private final CategoryReadRepository categoryReadRepository;
 
-  public Mono<Category> handle(UpdateCategoryCommand command) {
+  public Mono<Category> handle(String id, UpdateCategoryCommand command, String ownerId) {
     return categoryReadRepository
-        .findById(command.id())
+        .findById(id)
         .switchIfEmpty(Mono.error(new NotFoundException("Category not found")))
         .flatMap(
             existing -> {
@@ -28,7 +28,7 @@ public class UpdateCategoryCommandHandler {
                 return Mono.error(new ForbiddenException("System categories cannot be modified"));
               }
 
-              if (!command.ownerId().equals(existing.ownerId())) {
+              if (!ownerId.equals(existing.ownerId())) {
                 return Mono.error(new NotFoundException("Category not found"));
               }
 

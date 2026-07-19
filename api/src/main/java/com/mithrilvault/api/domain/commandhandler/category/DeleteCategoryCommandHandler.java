@@ -1,6 +1,5 @@
 package com.mithrilvault.api.domain.commandhandler.category;
 
-import com.mithrilvault.api.domain.command.category.DeleteCategoryCommand;
 import com.mithrilvault.api.domain.config.SystemCategoryIds;
 import com.mithrilvault.api.domain.exception.ForbiddenException;
 import com.mithrilvault.api.domain.exception.NotFoundException;
@@ -19,9 +18,9 @@ public class DeleteCategoryCommandHandler {
   private final CategoryReadRepository categoryReadRepository;
   private final SystemCategoryIds systemCategoryIds;
 
-  public Mono<Void> handle(DeleteCategoryCommand command) {
+  public Mono<Void> handle(String id, String ownerId) {
     return categoryReadRepository
-        .findById(command.id())
+        .findById(id)
         .switchIfEmpty(Mono.error(new NotFoundException("Category not found")))
         .flatMap(
             existing -> {
@@ -29,18 +28,18 @@ public class DeleteCategoryCommandHandler {
                 return Mono.error(new ForbiddenException("System categories cannot be deleted"));
               }
 
-              if (!command.ownerId().equals(existing.ownerId())) {
+              if (!ownerId.equals(existing.ownerId())) {
                 return Mono.error(new NotFoundException("Category not found"));
               }
 
               return categoryReadRepository
-                  .findChildrenByParentId(command.id())
+                  .findChildrenByParentId(id)
                   .map(Category::id)
                   .collectList()
                   .flatMap(
                       childIds ->
                           categoryRepository.deleteWithReassignment(
-                              command.id(), childIds, systemCategoryIds.getOutrosId()));
+                              id, childIds, systemCategoryIds.getOutrosId()));
             });
   }
 }

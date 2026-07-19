@@ -9,6 +9,7 @@ testcontainers           = "2.0.5"
 logstash-logback         = "8.1"
 archunit                 = "1.4.1"
 spring-cloud-aws         = "4.0.0-RC1"
+mongock                  = "5.4.2"
 
 [libraries]
 # ── Spring Boot Starters (version managed by BOM — no version needed) ─────────
@@ -22,7 +23,7 @@ spring-boot-devtools         = { module = "org.springframework.boot:spring-boot-
 spring-boot-tracing-brave    = { module = "org.springframework.boot:spring-boot-micrometer-tracing-brave" }
 
 # ── Third-party (explicit versions — not covered by Spring BOM) ────────────────
-springdoc-webflux            = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui",   version.ref = "springdoc" }
+springdoc-webflux            = { module = "org.springdoc:springdoc-openapi-starter-webflux-ui",    version.ref = "springdoc" }
 mapstruct-core               = { module = "org.mapstruct:mapstruct",                               version.ref = "mapstruct" }
 
 # ── Annotation Processors ──────────────────────────────────────────────────────
@@ -51,6 +52,16 @@ archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref
 
 # ── AWS / Spring Cloud AWS ─────────────────────────────────────────────────
 spring-cloud-aws-secrets = { module = "io.awspring.cloud:spring-cloud-aws-starter-secrets-manager", version.ref = "spring-cloud-aws" }
+
+# ── Spring Security / Micrometer (BOM-managed — no version needed) ─────────
+spring-security-oauth2-jose     = { module = "org.springframework.security:spring-security-oauth2-jose" }
+micrometer-tracing-bridge-brave = { module = "io.micrometer:micrometer-tracing-bridge-brave" }
+micrometer-context-propagation  = { module = "io.micrometer:context-propagation" }
+
+# ── Mongock ────────────────────────────────────────────────────────────────
+mongock-bom              = { module = "io.mongock:mongock-bom",                  version.ref = "mongock" }
+mongock-springboot       = { module = "io.mongock:mongock-springboot" }
+mongock-mongodb-springdata = { module = "io.mongock:mongodb-springdata-v4-driver" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot",  version.ref = "spring-boot" }
