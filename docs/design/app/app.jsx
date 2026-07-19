@@ -1,10 +1,17 @@
 /* App root — routing + tweaks */
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "accent": "Azul-tinta",
   "navLayout": "Expandida",
-  "accent": "#5E81AC",
   "density": "Normal"
 }/*EDITMODE-END*/;
+
+// Acento — quiet-luxury options drawn from the brand families (no green)
+const ACCENTS = {
+  'Azul-tinta': { deep: '#3C5070', bg: '#EAEDF2', line: '#D6DBE3' },
+  'Ardósia':    { deep: '#566B82', bg: '#EAEEF1', line: '#D5DDE3' },
+  'Vinho':      { deep: '#7C3A49', bg: '#F2E9EB', line: '#E3D1D5' },
+};
 
 function ComingSoon({ route }) {
   const meta = PAGE_META[route];
@@ -33,12 +40,17 @@ const SCREENS = {
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
 
-  // apply accent override
+  // Mithril is the committed direction; tweaks vary the accent within it.
   React.useEffect(() => {
-    document.documentElement.style.setProperty('--frost-deep', t.accent);
-    const hex = t.accent;
-    document.documentElement.style.setProperty('--accent-bg', hex + '18');
-    document.documentElement.style.setProperty('--accent-line', hex + '40');
+    document.documentElement.setAttribute('data-theme', 'mithril');
+  }, []);
+
+  React.useEffect(() => {
+    const a = ACCENTS[t.accent] || ACCENTS['Azul-tinta'];
+    const r = document.documentElement.style;
+    r.setProperty('--frost-deep', a.deep);
+    r.setProperty('--accent-bg', a.bg);
+    r.setProperty('--accent-line', a.line);
   }, [t.accent]);
 
   const [route, setRoute] = React.useState(() => {
@@ -68,17 +80,17 @@ function App() {
   const render = SCREENS[route] || SCREENS.dashboard;
 
   return (
-    <Shell route={route} setRoute={go} navLayout={t.navLayout === 'Compacta' ? 'compact' : 'full'}>
+    <Shell route={route} setRoute={go} theme="mithril" navLayout={t.navLayout === 'Compacta' ? 'compact' : 'full'}>
       {render()}
       <TweaksPanel>
+        <TweakSection label="Acento" />
+        <TweakRadio label="Cor" value={t.accent}
+          options={['Azul-tinta', 'Ardósia', 'Vinho']}
+          onChange={(v) => setTweak('accent', v)} />
         <TweakSection label="Navegação" />
         <TweakRadio label="Sidebar" value={t.navLayout}
           options={['Expandida', 'Compacta']}
           onChange={(v) => setTweak('navLayout', v)} />
-        <TweakSection label="Cor de destaque" />
-        <TweakColor label="Accent" value={t.accent}
-          options={['#5E81AC', '#88C0D0', '#8FBCBB', '#7E9F69', '#A98AA3']}
-          onChange={(v) => setTweak('accent', v)} />
         <TweakSection label="Densidade" />
         <TweakRadio label="Espaçamento" value={t.density}
           options={['Denso', 'Normal', 'Espaçado']}

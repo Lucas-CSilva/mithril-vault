@@ -5,35 +5,35 @@ MV.data = (() => {
   // ---- Categories (system) -------------------------------------
   const cat = (id, name, icon, color, parent = null) => ({ id, name, icon, color, parentId: parent });
   const categories = [
-    cat('alim', 'Alimentação', 'cart', '#7E9F69'),
-    cat('alim-merc', 'Supermercado', 'cart', '#7E9F69', 'alim'),
-    cat('alim-rest', 'Restaurante', 'utensils', '#7E9F69', 'alim'),
-    cat('alim-deliv', 'Delivery', 'bag', '#7E9F69', 'alim'),
-    cat('mora', 'Moradia', 'home', '#5E81AC'),
-    cat('mora-alug', 'Aluguel', 'home', '#5E81AC', 'mora'),
-    cat('mora-ener', 'Energia', 'bolt', '#5E81AC', 'mora'),
-    cat('trans', 'Transporte', 'car', '#81A1C1'),
-    cat('trans-comb', 'Combustível', 'fuel', '#81A1C1', 'trans'),
-    cat('trans-app', 'Aplicativo', 'car', '#81A1C1', 'trans'),
-    cat('saude', 'Saúde', 'heart', '#BF616A'),
-    cat('educ', 'Educação', 'book', '#88C0D0'),
-    cat('lazer', 'Lazer', 'sparkle', '#A98AA3'),
-    cat('vest', 'Vestuário', 'shirt', '#D08770'),
-    cat('serv', 'Serviços & Assinaturas', 'repeat', '#C9A85C'),
-    cat('serv-stream', 'Streaming', 'play', '#C9A85C', 'serv'),
-    cat('inv', 'Investimentos', 'trending', '#8FBCBB'),
-    cat('transf', 'Transferências', 'swap', '#99A1B0'),
-    cat('renda', 'Renda', 'arrow-down-left', '#7E9F69'),
-    cat('outros', 'Outros', 'dots', '#99A1B0'),
+    cat('alim', 'Alimentação', 'cart', '#B0795F'),
+    cat('alim-merc', 'Supermercado', 'cart', '#B0795F', 'alim'),
+    cat('alim-rest', 'Restaurante', 'utensils', '#B0795F', 'alim'),
+    cat('alim-deliv', 'Delivery', 'bag', '#B0795F', 'alim'),
+    cat('mora', 'Moradia', 'home', '#3C5070'),
+    cat('mora-alug', 'Aluguel', 'home', '#3C5070', 'mora'),
+    cat('mora-ener', 'Energia', 'bolt', '#3C5070', 'mora'),
+    cat('trans', 'Transporte', 'car', '#5E7A96'),
+    cat('trans-comb', 'Combustível', 'fuel', '#5E7A96', 'trans'),
+    cat('trans-app', 'Aplicativo', 'car', '#5E7A96', 'trans'),
+    cat('saude', 'Saúde', 'heart', '#8E3A4B'),
+    cat('educ', 'Educação', 'book', '#3E6B82'),
+    cat('lazer', 'Lazer', 'sparkle', '#9A8AA3'),
+    cat('vest', 'Vestuário', 'shirt', '#A87E84'),
+    cat('serv', 'Serviços & Assinaturas', 'repeat', '#9E7A4E'),
+    cat('serv-stream', 'Streaming', 'play', '#9E7A4E', 'serv'),
+    cat('inv', 'Investimentos', 'trending', '#6E7E96'),
+    cat('transf', 'Transferências', 'swap', '#8A93A3'),
+    cat('renda', 'Renda', 'arrow-down-left', '#4E7C66'),
+    cat('outros', 'Outros', 'dots', '#9298A2'),
   ];
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
 
   // ---- Accounts ------------------------------------------------
   const accounts = [
-    { id: 'ac1', name: 'Nubank',          type: 'DIGITAL',  institution: 'Nu Pagamentos', color: '#A98AA3', balance: 1284090, initial: 980000 },
-    { id: 'ac2', name: 'Itaú Corrente',   type: 'CHECKING', institution: 'Itaú',          color: '#D08770', balance: 742355,  initial: 600000 },
-    { id: 'ac3', name: 'Inter',           type: 'DIGITAL',  institution: 'Banco Inter',   color: '#C5854F', balance: 318800,  initial: 250000 },
-    { id: 'ac4', name: 'Carteira',        type: 'CASH',     institution: null,            color: '#7E9F69', balance: 43000,   initial: 50000 },
+    { id: 'ac1', name: 'Nubank',          type: 'DIGITAL',  institution: 'Nu Pagamentos', color: '#7E6A86', balance: 1284090, initial: 980000 },
+    { id: 'ac2', name: 'Itaú Corrente',   type: 'CHECKING', institution: 'Itaú',          color: '#B0795F', balance: 742355,  initial: 600000 },
+    { id: 'ac3', name: 'Inter',           type: 'DIGITAL',  institution: 'Banco Inter',   color: '#9E7A4E', balance: 318800,  initial: 250000 },
+    { id: 'ac4', name: 'Carteira',        type: 'CASH',     institution: null,            color: '#6E7E96', balance: 43000,   initial: 50000 },
   ];
 
   // ---- Credit cards + invoices --------------------------------
@@ -80,14 +80,18 @@ MV.data = (() => {
   // ---- Cash-flow series (liquid balance EOD) ------------------
   // last 30 days, centavos
   const cashflow30 = (() => {
+    // smooth upward drift from ~20.5k to the hero balance, with gentle noise.
+    // noise tapers to 0 at the end so the line lands softly (no final spike).
+    const start = 2050000, end = 2388245;
+    const noise = [0,-9000,-4000,6000,14000,8000,-3000,-12000,-6000,4000,
+                   12000,9000,-2000,-10000,-15000,-8000,2000,11000,16000,9000,
+                   -1000,-8000,-14000,-7000,3000,10000,6000,-2000,0,0];
     const pts = [];
-    let bal = 2050000;
-    const seed = [12,-8,4,-22,6,-3,9,-14,3,18,-6,-9,25,-4,-11,7,-2,14,-19,5,8,-7,-13,21,-5,-9,3,-16,12,29];
     for (let i = 0; i < 30; i++) {
-      bal += seed[i] * 1100;
-      pts.push(bal);
+      const base = start + (end - start) * (i / 29);
+      pts.push(Math.round(base + noise[i]));
     }
-    pts[29] = 2388245; // = saldo líquido hero
+    pts[0] = start; pts[29] = end; // = saldo líquido hero
     return pts;
   })();
   const cashflow7  = cashflow30.slice(-7);
@@ -95,13 +99,13 @@ MV.data = (() => {
 
   // ---- Expense distribution (current month, by top-level) -----
   const expenseDist = [
-    { id:'mora',  label:'Moradia',     value: 561870, color:'#5E81AC' },
-    { id:'alim',  label:'Alimentação', value: 384200, color:'#7E9F69' },
-    { id:'trans', label:'Transporte',  value: 198400, color:'#81A1C1' },
-    { id:'lazer', label:'Lazer',       value:  96300, color:'#A98AA3' },
-    { id:'serv',  label:'Serviços',    value:  74600, color:'#C9A85C' },
-    { id:'vest',  label:'Vestuário',   value:  62900, color:'#D08770' },
-    { id:'saude', label:'Saúde',       value:  41800, color:'#BF616A' },
+    { id:'mora',  label:'Moradia',     value: 561870, color:'#3C5070' },
+    { id:'alim',  label:'Alimentação', value: 384200, color:'#B0795F' },
+    { id:'trans', label:'Transporte',  value: 198400, color:'#5E7A96' },
+    { id:'lazer', label:'Lazer',       value:  96300, color:'#9A8AA3' },
+    { id:'serv',  label:'Serviços',    value:  74600, color:'#9E7A4E' },
+    { id:'vest',  label:'Vestuário',   value:  62900, color:'#A87E84' },
+    { id:'saude', label:'Saúde',       value:  41800, color:'#8E3A4B' },
   ];
 
   // ---- Obligations radar (next 7 days) ------------------------
@@ -125,10 +129,10 @@ MV.data = (() => {
 
   // ---- Goals (cofres) -----------------------------------------
   const goals = [
-    { id:'g1', name:'Reserva de Emergência', icon:'shield',  target: 3000000, current: 2150000, deadline:'2026-12-31', color:'#5E81AC' },
-    { id:'g2', name:'Viagem Japão',          icon:'plane',   target: 1800000, current:  720000, deadline:'2027-03-01', color:'#88C0D0' },
-    { id:'g3', name:'MacBook Pro',           icon:'laptop',  target:  1600000, current: 1440000, deadline:null,        color:'#A98AA3' },
-    { id:'g4', name:'Fundo Carro',           icon:'car',     target: 4500000, current:  980000, deadline:'2028-01-01', color:'#7E9F69' },
+    { id:'g1', name:'Reserva de Emergência', icon:'shield',  target: 3000000, current: 2150000, deadline:'2026-12-31', color:'#3C5070' },
+    { id:'g2', name:'Viagem Japão',          icon:'plane',   target: 1800000, current:  720000, deadline:'2027-03-01', color:'#5E7A96' },
+    { id:'g3', name:'MacBook Pro',           icon:'laptop',  target:  1600000, current: 1440000, deadline:null,        color:'#9A8AA3' },
+    { id:'g4', name:'Fundo Carro',           icon:'car',     target: 4500000, current:  980000, deadline:'2028-01-01', color:'#9E7A4E' },
   ];
 
   // ---- Investments (renda fixa) -------------------------------
@@ -143,12 +147,12 @@ MV.data = (() => {
   // ---- Subscriptions ------------------------------------------
   const subscriptions = [
     { id:'s1', name:'Netflix',        cat:'serv-stream', amount: 5590,  cycle:'MONTHLY',  next:'2026-06-15', method:'CREDIT_CARD', status:'ACTIVE',  color:'#BF616A' },
-    { id:'s2', name:'Spotify Família',cat:'serv-stream', amount: 3490,  cycle:'MONTHLY',  next:'2026-06-09', method:'CREDIT_CARD', status:'ACTIVE',  color:'#7E9F69' },
+    { id:'s2', name:'Spotify Família',cat:'serv-stream', amount: 3490,  cycle:'MONTHLY',  next:'2026-06-09', method:'CREDIT_CARD', status:'ACTIVE',  color:'#5E7A96' },
     { id:'s3', name:'Disney+',        cat:'serv-stream', amount: 4390,  cycle:'MONTHLY',  next:'2026-06-12', method:'CREDIT_CARD', status:'ACTIVE',  color:'#5E81AC' },
     { id:'s4', name:'Amazon Prime',   cat:'serv-stream', amount: 1990,  cycle:'MONTHLY',  next:'2026-06-20', method:'CREDIT_CARD', status:'ACTIVE',  color:'#81A1C1' },
     { id:'s5', name:'Academia Smart Fit', cat:'saude',   amount: 9990,  cycle:'MONTHLY',  next:'2026-06-13', method:'BOLETO',      status:'ACTIVE',  color:'#C5854F' },
     { id:'s6', name:'iCloud 2TB',     cat:'serv',        amount: 4990,  cycle:'MONTHLY',  next:'2026-06-18', method:'CREDIT_CARD', status:'ACTIVE',  color:'#99A1B0' },
-    { id:'s7', name:'ChatGPT Plus',   cat:'serv',        amount: 11800, cycle:'MONTHLY',  next:'2026-06-24', method:'CREDIT_CARD', status:'ACTIVE',  color:'#8FBCBB' },
+    { id:'s7', name:'ChatGPT Plus',   cat:'serv',        amount: 11800, cycle:'MONTHLY',  next:'2026-06-24', method:'CREDIT_CARD', status:'ACTIVE',  color:'#6E7E96' },
     { id:'s8', name:'Adobe CC',       cat:'serv',        amount: 33900, cycle:'ANNUAL',   next:'2026-11-02', method:'CREDIT_CARD', status:'ACTIVE',  color:'#A98AA3' },
     { id:'s9', name:'HBO Max',        cat:'serv-stream', amount: 2990,  cycle:'MONTHLY',  next:null,         method:'CREDIT_CARD', status:'CANCELLED', color:'#A98AA3' },
   ];

@@ -1,0 +1,231 @@
+/* ============================================================
+   Mithril Vault — Design Directions v2
+   Three distinct quiet-luxury languages, scoped by .dir-*.
+   Light surfaces · no green · no dark · editorial restraint.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=DM+Serif+Display:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Spline+Sans+Mono:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  color: #2b2b2b;
+  -webkit-font-smoothing: antialiased;
+  background: #ECEAE5;
+}
+
+/* ---- Canvas title block ----------------------------------- */
+.canvas-title { position: absolute; left: 48px; top: 40px; width: 1880px; }
+.canvas-title h1 {
+  font-family: 'Spectral', serif; font-size: 36px; font-weight: 400;
+  letter-spacing: -.01em; color: #1d1d1f;
+}
+.canvas-title .epi {
+  font-family: 'Spectral', serif; font-style: italic; font-weight: 300;
+  font-size: 16px; color: #6E5C50; margin-top: 6px;
+}
+.canvas-title p {
+  font-family: 'Spline Sans Mono', monospace; font-size: 12.5px;
+  letter-spacing: .02em; color: #71717a; margin-top: 12px; max-width: 880px; line-height: 1.7;
+}
+
+/* ---- Frame chrome (neutral, shared) ----------------------- */
+.frame {
+  position: absolute; top: 200px; width: 600px;
+  background: #ffffff; border: 1px solid #e4e2dd; border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 30px 70px rgba(40,32,28,.10);
+  overflow: hidden;
+}
+.spec { padding: 22px 26px 20px; border-bottom: 1px solid #ededeb; background: #fff; }
+.spec-row { display: flex; align-items: baseline; gap: 12px; }
+.spec-num { font-family: 'Spline Sans Mono', monospace; font-size: 12px; font-weight: 500; color: #b0aaa2; letter-spacing: .04em; }
+.spec-name { font-family: 'Spectral', serif; font-size: 24px; font-weight: 500; color: #18181b; letter-spacing: -.01em; }
+.spec-tag { margin-left: auto; font-family: 'Spline Sans Mono', monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: #b0aaa2; }
+.spec-desc { font-size: 13px; color: #6f6a63; margin-top: 8px; line-height: 1.55; }
+.spec-desc em { font-style: italic; color: #8a8379; }
+.spec-meta { display: flex; align-items: center; gap: 16px; margin-top: 16px; }
+.swatches { display: flex; gap: 6px; }
+.swatches i { width: 22px; height: 22px; border-radius: 6px; display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.spec-fonts { font-family: 'Spline Sans Mono', monospace; font-size: 11px; color: #57534e; letter-spacing: .01em; line-height: 1.5; }
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   DIRECTION 01 — MITHRIL
+   Cool ink-navy + pewter/silver. Airy hairline minimalism.
+   ============================================================ */
+.dir-mithril {
+  --bg: #F5F6F6; --surface: #FFFFFF; --ink: #1B2230; --ink-2: #474E5C; --ink-3: #7B818C;
+  --line: #E6E7E9; --hair: #D2D5D9; --accent: #3C5070; --steel: #6B727E; --neg: #8E3A4B;
+  background: var(--bg); color: var(--ink);
+  font-family: 'Hanken Grotesk', sans-serif;
+  padding: 30px 32px 34px;
+}
+.dir-mithril .mi-top { display: flex; align-items: center; justify-content: space-between; }
+.dir-mithril .mi-brand { display: flex; align-items: center; gap: 11px; }
+.dir-mithril .mi-seal {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--accent); display: grid; place-items: center;
+  font-family: 'Spectral', serif; font-size: 17px; color: var(--accent);
+  position: relative;
+}
+.dir-mithril .mi-seal::after {
+  content: ''; position: absolute; inset: 3px; border-radius: 50%;
+  border: 1px solid var(--hair);
+}
+.dir-mithril .mi-word { font-family: 'Spectral', serif; font-size: 18px; letter-spacing: .01em; }
+.dir-mithril .mi-word b { font-weight: 600; }
+.dir-mithril .mi-nav { display: flex; gap: 18px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+.dir-mithril .mi-nav .on { color: var(--ink); position: relative; }
+.dir-mithril .mi-nav .on::after { content:''; position:absolute; left:0; right:0; bottom:-7px; height:1px; background: var(--accent); }
+
+.dir-mithril .mi-hero { padding: 34px 0 26px; text-align: left; }
+.dir-mithril .mi-kicker { font-family: 'Spline Sans Mono', monospace; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-3); }
+.dir-mithril .mi-figure { font-family: 'Spectral', serif; font-weight: 400; font-size: 58px; line-height: 1; letter-spacing: -.02em; margin-top: 12px; }
+.dir-mithril .mi-figure sup { font-size: 22px; color: var(--ink-3); vertical-align: baseline; margin-right: 5px; }
+.dir-mithril .mi-figure i { font-style: normal; color: var(--ink-3); font-size: 30px; }
+.dir-mithril .mi-delta { margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Spline Sans Mono', monospace; color: var(--ink-2); }
+.dir-mithril .mi-delta b { color: var(--accent); }
+
+.dir-mithril .mi-spark { margin: 4px 0 8px; }
+
+.dir-mithril .mi-list { margin-top: 6px; }
+.dir-mithril .mi-listhead { font-family: 'Spline Sans Mono', monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); padding-bottom: 10px; border-bottom: 1px solid var(--ink); margin-bottom: 2px; }
+.dir-mithril .mi-row { display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.dir-mithril .mi-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.dir-mithril .mi-rname { font-size: 14px; font-weight: 500; }
+.dir-mithril .mi-rsub { font-size: 11px; color: var(--ink-3); margin-top: 1px; }
+.dir-mithril .mi-rval { margin-left: auto; font-family: 'Spectral', serif; font-size: 17px; font-weight: 500; }
+
+.dir-mithril .mi-cofres { margin-top: 26px; }
+.dir-mithril .mi-cofre { padding: 14px 0; border-top: 1px solid var(--line); }
+.dir-mithril .mi-cofre:last-child { border-bottom: 1px solid var(--line); }
+.dir-mithril .mi-clabel { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 9px; }
+.dir-mithril .mi-clabel span:last-child { font-family: 'Spline Sans Mono', monospace; font-size: 11.5px; color: var(--ink-2); }
+.dir-mithril .mi-track { height: 2px; background: var(--hair); position: relative; }
+.dir-mithril .mi-fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); }
+.dir-mithril .mi-fill.steel { background: var(--steel); }
+
+/* ============================================================
+   DIRECTION 02 — TOMO  (wine ledger / leather-bound)
+   Warm cream + deep wine + brass. Dense ruled bookishness.
+   ============================================================ */
+.dir-tomo {
+  --bg: #F3EDE3; --surface: #FBF7EF; --ink: #2A2018; --ink-2: #6A5C4E; --ink-3: #9C8B78;
+  --line: #E2D6C4; --rule: #C9B89E; --wine: #6E2A3C; --brass: #9E7A36; --neg: #8C2F3A;
+  background: var(--bg); color: var(--ink);
+  font-family: 'Instrument Sans', sans-serif;
+  padding: 28px 30px 32px;
+}
+.dir-tomo .to-mast { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: 14px; border-bottom: 2px solid var(--wine); }
+.dir-tomo .to-crest { display: flex; align-items: center; gap: 12px; }
+.dir-tomo .to-mark {
+  width: 40px; height: 44px; border: 1px solid var(--brass); border-radius: 3px;
+  display: grid; place-items: center; color: var(--wine);
+  font-family: 'Libre Caslon Text', serif; font-weight: 700; font-size: 19px;
+  background: linear-gradient(180deg, #FBF7EF, #F2E9DA);
+}
+.dir-tomo .to-name { font-family: 'Libre Caslon Text', serif; font-size: 22px; color: var(--ink); line-height: 1.05; }
+.dir-tomo .to-name small { display: block; font-family: 'Spline Sans Mono', monospace; font-size: 9.5px; letter-spacing: .22em; text-transform: uppercase; color: var(--brass); margin-top: 4px; }
+.dir-tomo .to-vol { text-align: right; font-family: 'Spline Sans Mono', monospace; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); line-height: 1.7; }
+
+.dir-tomo .to-hero { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; padding: 20px 0 18px; border-bottom: 1px solid var(--rule); }
+.dir-tomo .to-kicker { font-family: 'Spline Sans Mono', monospace; font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+.dir-tomo .to-figure { font-family: 'Libre Caslon Text', serif; font-size: 46px; letter-spacing: -.01em; margin-top: 8px; line-height: 1; }
+.dir-tomo .to-figure sup { font-size: 18px; color: var(--ink-3); vertical-align: baseline; margin-right: 4px; }
+.dir-tomo .to-figure i { font-style: normal; color: var(--ink-3); font-size: 26px; }
+.dir-tomo .to-delta { margin-top: 12px; font-family: 'Spline Sans Mono', monospace; font-size: 11.5px; color: var(--wine); }
+.dir-tomo .to-aside { border-left: 1px solid var(--line); padding-left: 18px; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
+.dir-tomo .to-aside .ar { display: flex; justify-content: space-between; font-size: 12.5px; }
+.dir-tomo .to-aside .ar span { color: var(--ink-2); }
+.dir-tomo .to-aside .ar b { font-family: 'Libre Caslon Text', serif; font-weight: 700; }
+.dir-tomo .to-aside .ar b.neg { color: var(--neg); }
+
+.dir-tomo .to-secthead { display: flex; align-items: baseline; justify-content: space-between; margin: 22px 0 4px; }
+.dir-tomo .to-secthead h3 { font-family: 'Libre Caslon Text', serif; font-size: 16px; font-weight: 400; }
+.dir-tomo .to-secthead em { font-family: 'Spline Sans Mono', monospace; font-style: normal; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+
+.dir-tomo .to-ledger { width: 100%; border-collapse: collapse; }
+.dir-tomo .to-ledger td { padding: 9px 0; border-bottom: 1px dotted var(--rule); font-size: 13px; vertical-align: middle; }
+.dir-tomo .to-ledger tr:first-child td { border-top: 1px solid var(--ink); }
+.dir-tomo .to-ledger .dt { font-family: 'Spline Sans Mono', monospace; font-size: 11px; color: var(--ink-3); width: 46px; }
+.dir-tomo .to-ledger .ds { color: var(--ink); }
+.dir-tomo .to-ledger .ds small { display: block; font-size: 10px; color: var(--ink-3); margin-top: 1px; }
+.dir-tomo .to-ledger .am { text-align: right; font-family: 'Spline Sans Mono', monospace; font-weight: 500; white-space: nowrap; }
+.dir-tomo .to-ledger .am.cr { color: var(--brass); }
+.dir-tomo .to-ledger .am.dbt { color: var(--ink); }
+
+.dir-tomo .to-budgets { margin-top: 22px; }
+.dir-tomo .to-bud { display: grid; grid-template-columns: 92px 1fr 70px; align-items: center; gap: 14px; padding: 9px 0; }
+.dir-tomo .to-bud .bl { font-size: 12.5px; }
+.dir-tomo .to-bud .bt { height: 7px; background: #EBE0CE; border: 1px solid var(--rule); position: relative; }
+.dir-tomo .to-bud .bf { position: absolute; left: 0; top: 0; bottom: 0; background: var(--wine); }
+.dir-tomo .to-bud .bf.over { background: var(--neg); }
+.dir-tomo .to-bud .bf.brass { background: var(--brass); }
+.dir-tomo .to-bud .bv { text-align: right; font-family: 'Spline Sans Mono', monospace; font-size: 10.5px; color: var(--ink-2); }
+
+/* ============================================================
+   DIRECTION 03 — ÁGORA  (charcoal + indigo, café-bright modern)
+   Warm white, soft cards, one bold accent. Airy & contemporary.
+   ============================================================ */
+.dir-agora {
+  --bg: #F4F2ED; --surface: #FFFFFF; --ink: #20232C; --ink-2: #585C66; --ink-3: #9296A0;
+  --line: #E9E6DF; --accent: #36408C; --accent-2: #4E5AB0; --accent-soft: #E7E8F3; --neg: #9A3B4B; --pos: #36408C;
+  background: var(--bg); color: var(--ink);
+  font-family: 'Manrope', sans-serif;
+  padding: 26px 28px 30px;
+}
+.dir-agora .ag-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+.dir-agora .ag-brand { display: flex; align-items: center; gap: 10px; }
+.dir-agora .ag-mark {
+  width: 32px; height: 32px; border-radius: 9px; background: var(--accent);
+  display: grid; place-items: center; color: #fff;
+  font-family: 'DM Serif Display', serif; font-size: 18px; line-height: 1;
+}
+.dir-agora .ag-word { font-family: 'DM Serif Display', serif; font-size: 18px; letter-spacing: 0; }
+.dir-agora .ag-pills { display: flex; gap: 6px; margin-left: 18px; }
+.dir-agora .ag-pills span { font-size: 12px; font-weight: 600; color: var(--ink-3); padding: 6px 12px; border-radius: 999px; }
+.dir-agora .ag-pills span.on { background: var(--accent-soft); color: var(--accent); }
+.dir-agora .ag-cta { margin-left: auto; font-size: 12.5px; font-weight: 700; color: #fff; background: var(--accent); padding: 9px 16px; border-radius: 10px; white-space: nowrap; }
+
+.dir-agora .ag-balcard {
+  background: var(--accent); color: #fff; border-radius: 16px; padding: 22px 24px;
+  position: relative; overflow: hidden;
+}
+.dir-agora .ag-balcard::after {
+  content: '✦'; position: absolute; right: 18px; top: 14px; font-size: 15px; color: rgba(255,255,255,.30);
+}
+.dir-agora .ag-balcard .lab { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.72); letter-spacing: .02em; }
+.dir-agora .ag-balcard .fig { font-family: 'DM Serif Display', serif; font-size: 46px; line-height: 1.05; margin-top: 8px; }
+.dir-agora .ag-balcard .fig small { font-size: 22px; opacity: .7; }
+.dir-agora .ag-balcard .row { display: flex; gap: 26px; margin-top: 16px; }
+.dir-agora .ag-balcard .row div span { display: block; font-size: 11px; color: rgba(255,255,255,.65); }
+.dir-agora .ag-balcard .row div b { font-size: 15px; font-weight: 700; }
+
+.dir-agora .ag-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
+.dir-agora .ag-stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 14px; }
+.dir-agora .ag-stat .s-lab { font-size: 11px; font-weight: 600; color: var(--ink-3); }
+.dir-agora .ag-stat .s-val { font-family: 'DM Serif Display', serif; font-size: 22px; margin-top: 5px; }
+.dir-agora .ag-stat .s-val.neg { color: var(--neg); }
+
+.dir-agora .ag-secthead { display: flex; align-items: baseline; justify-content: space-between; margin: 24px 0 12px; }
+.dir-agora .ag-secthead h3 { font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 400; }
+.dir-agora .ag-secthead a { font-size: 12px; font-weight: 700; color: var(--accent); }
+
+.dir-agora .ag-tx { display: flex; align-items: center; gap: 13px; padding: 11px 0; }
+.dir-agora .ag-tx + .ag-tx { border-top: 1px solid var(--line); }
+.dir-agora .ag-ic { width: 38px; height: 38px; border-radius: 11px; background: var(--accent-soft); display: grid; place-items: center; flex: none; color: var(--accent); font-size: 16px; }
+.dir-agora .ag-tn { font-size: 14px; font-weight: 600; }
+.dir-agora .ag-ts { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+.dir-agora .ag-ta { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dir-agora .ag-ta.cr { color: var(--accent); }
+
+.dir-agora .ag-goal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px; margin-top: 20px; }
+.dir-agora .ag-goal .g-top { display: flex; align-items: center; gap: 10px; }
+.dir-agora .ag-goal .g-em { width: 34px; height: 34px; border-radius: 10px; background: var(--accent-soft); display: grid; place-items: center; color: var(--accent); font-size: 16px; }
+.dir-agora .ag-goal .g-name { font-size: 14px; font-weight: 700; }
+.dir-agora .ag-goal .g-sub { font-size: 11.5px; color: var(--ink-3); }
+.dir-agora .ag-goal .g-pct { margin-left: auto; font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--accent); }
+.dir-agora .ag-goal .g-track { height: 8px; border-radius: 999px; background: var(--accent-soft); margin-top: 14px; position: relative; }
+.dir-agora .ag-goal .g-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: var(--accent); }

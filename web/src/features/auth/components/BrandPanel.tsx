@@ -1,52 +1,12 @@
 import { Check, Shield } from "lucide-react";
 
+import { RingSealLogo } from "@/shared/components/RingSealLogo";
+
 interface BrandPanelProps {
   eyebrow: string;
   headline: string;
   lede: string;
   features: string[];
-}
-
-function LogoLight() {
-  return (
-    <svg
-      width="27"
-      height="27"
-      viewBox="0 0 32 32"
-      fill="none"
-      style={{ flexShrink: 0 }}
-    >
-      <rect
-        x="16"
-        y="2.5"
-        width="19"
-        height="19"
-        rx="3.5"
-        transform="rotate(45 16 2.5)"
-        fill="#fff"
-        fillOpacity="0.97"
-      />
-      <rect
-        x="16"
-        y="8.9"
-        width="10"
-        height="10"
-        rx="2"
-        transform="rotate(45 16 8.9)"
-        fill="none"
-        style={{ stroke: "var(--frost-teal)", strokeOpacity: 0.9 }}
-        strokeWidth="1.6"
-      />
-      <line
-        x1="16"
-        y1="2.5"
-        x2="16"
-        y2="29.5"
-        style={{ stroke: "var(--frost-teal)", strokeOpacity: 0.35 }}
-        strokeWidth="1.1"
-      />
-    </svg>
-  );
 }
 
 export function BrandPanel({
@@ -63,47 +23,43 @@ export function BrandPanel({
           "radial-gradient(120% 80% at 12% 8%, var(--brand-panel-haze) 0%, rgba(122,138,164,0) 42%), linear-gradient(157deg, var(--frost-deep) 0%, var(--frost-shade) 38%, var(--frost-dark) 74%, var(--ink) 100%)",
       }}
     >
-      {/* Diamond lattice overlay */}
+      {/* Dot lattice overlay */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cpath d='M36 3 69 36 36 69 3 36Z' fill='none' stroke='%23ffffff' stroke-opacity='0.045' stroke-width='1'/%3E%3C/svg%3E")`,
-          backgroundSize: "72px 72px",
-          maskImage: "linear-gradient(150deg, #000 0%, transparent 78%)",
-          WebkitMaskImage: "linear-gradient(150deg, #000 0%, transparent 78%)",
+          backgroundImage:
+            "radial-gradient(rgba(255,255,255,0.055) 1px, transparent 1.4px)",
+          backgroundSize: "22px 22px",
+          maskImage: "linear-gradient(150deg, #000 0%, transparent 80%)",
+          WebkitMaskImage: "linear-gradient(150deg, #000 0%, transparent 80%)",
         }}
       />
 
-      {/* Large outline diamond */}
+      {/* Concentric ring motif, echoes the seal */}
       <div
-        className="pointer-events-none absolute"
+        className="pointer-events-none absolute rounded-full"
         style={{
-          right: -120,
-          bottom: -130,
-          width: 440,
-          height: 440,
-          transform: "rotate(45deg)",
+          right: -150,
+          bottom: -160,
+          width: 460,
+          height: 460,
           border: "1.5px solid rgba(255,255,255,0.10)",
-          borderRadius: 56,
         }}
       />
-      {/* Inner diamond */}
       <div
-        className="pointer-events-none absolute"
+        className="pointer-events-none absolute rounded-full"
         style={{
-          right: -52,
-          bottom: -62,
-          width: 300,
-          height: 300,
-          transform: "rotate(45deg)",
+          right: -78,
+          bottom: -88,
+          width: 320,
+          height: 320,
           border: "1.5px solid rgba(255,255,255,0.07)",
-          borderRadius: 40,
         }}
       />
 
       {/* Logo */}
       <div className="relative z-10 flex items-center gap-3">
-        <LogoLight />
+        <RingSealLogo variant="light" size={27} />
         <div style={{ lineHeight: 1.04 }}>
           <div className="text-[17px] font-bold tracking-[-0.015em] whitespace-nowrap">
             Mithril Vault

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="mithril">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mithril Vault</title>
+  <link rel="stylesheet" href="app/styles.css" />
+  <style>
+    /* ---- Responsive layout grids ---- */
+    .mv-grid-8-4 { display: grid; grid-template-columns: 1.62fr 1fr; gap: 18px; align-items: start; }
+    .mv-grid-5-7 { display: grid; grid-template-columns: 0.82fr 1fr; gap: 18px; align-items: start; }
+    .mv-cards-grid { display: grid; grid-template-columns: 1.62fr 1fr; gap: 18px; align-items: start; }
+
+    @media (max-width: 1100px) {
+      .mv-grid-8-4, .mv-grid-5-7, .mv-cards-grid { grid-template-columns: 1fr; }
+    }
+
+    /* sidebar responsive */
+    .mv-sidebar-wrap { height: 100%; }
+    @media (max-width: 880px) {
+      .mv-sidebar-wrap { display: none; }
+      .mv-menu-btn { display: grid !important; place-items: center; }
+    }
+    @media (max-width: 720px) {
+      .mv-search { display: none !important; }
+      .mv-add-label { display: none; }
+    }
+    @media (max-width: 560px) {
+      .mv-month { display: none !important; }
+    }
+
+    /* hero responsive */
+    @media (max-width: 760px) {
+      .card > div[style*="grid-template-columns: minmax"] { grid-template-columns: 1fr !important; }
+    }
+
+    /* table column hiding */
+    .mv-hide-md, .mv-hide-sm { transition: none; }
+    @media (max-width: 1080px) {
+      .mv-hide-md { display: none !important; }
+      .mv-txrow, .mv-txhead { grid-template-columns: 52px 1fr 130px 130px !important; }
+      .mv-txhead > div:nth-child(3) { display: none; }
+      .mv-invrow, .mv-invhead { grid-template-columns: 1.6fr 1fr 1fr 0.9fr 110px !important; }
+      .mv-invhead > div:nth-child(2) { display: none; }
+    }
+    @media (max-width: 720px) {
+      .mv-hide-sm { display: none !important; }
+      .mv-txrow, .mv-txhead { grid-template-columns: 48px 1fr 120px !important; }
+      .mv-txhead > div:nth-child(3), .mv-txhead > div:nth-child(4) { display: none; }
+      .mv-invrow, .mv-invhead { grid-template-columns: 1.6fr 1fr 1fr 110px !important; }
+      .mv-invhead > div:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="app/format.js"></script>
+  <script src="app/data.js"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="app/icons.jsx"></script>
+  <script type="text/babel" src="app/charts.jsx"></script>
+  <script type="text/babel" src="app/shell.jsx"></script>
+  <script type="text/babel" src="app/dashboard.jsx"></script>
+  <script type="text/babel" src="app/accounts.jsx"></script>
+  <script type="text/babel" src="app/cards.jsx"></script>
+  <script type="text/babel" src="app/planning.jsx"></script>
+  <script type="text/babel" src="app/investments.jsx"></script>
+  <script type="text/babel" src="app/subscriptions.jsx"></script>
+  <script type="text/babel" src="app/app.jsx"></script>
+</body>
+</html>

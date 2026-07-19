@@ -1,5 +1,5 @@
-@import "tailwindcss";
 @import url("https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Hanken+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
 
 /* ============================================================================
    Mithril Design System — CSS Variables
@@ -73,6 +73,7 @@
   --sh-xl: 0 4px 10px rgba(27, 34, 48, 0.06), 0 26px 56px rgba(27, 34, 48, 0.1);
 
   --sidebar-w: 256px;
+  --topbar-bg: rgba(245, 246, 246, 0.86);
 
   /* ---- Semantic / shadcn-compatible aliases -------------------- */
   --background: var(--bg);
@@ -208,4 +209,13 @@ a {
 *:focus-visible {
   outline: 2px solid var(--frost-deep);
   outline-offset: 2px;
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
 }

@@ -6,37 +6,25 @@ const { useState } = React;
 
 const APP_URL = 'Mithril%20Vault.html';
 
-/* ---- Light logo for the dark brand panel ------------------ */
-function LogoLight({ size = 27 }) {
+/* ---- Light ring-seal logo for the dark brand panel -------- */
+function LogoLight({ size = 32 }) {
   return (
     <div className="brand-top">
-      <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
-        <rect x="16" y="2.5" width="19" height="19" rx="3.5" transform="rotate(45 16 2.5)"
-          fill="#fff" fillOpacity="0.97" />
-        <rect x="16" y="8.9" width="10" height="10" rx="2" transform="rotate(45 16 8.9)"
-          fill="none" stroke="#5E81AC" strokeWidth="1.6" strokeOpacity="0.9" />
-        <line x1="16" y1="2.5" x2="16" y2="29.5" stroke="#5E81AC" strokeWidth="1.1" strokeOpacity="0.35" />
-      </svg>
+      <div className="brand-seal" style={{ width: size, height: size, fontSize: size * 0.48 }}>M</div>
       <div className="brand-word">
         <div className="nm">Mithril Vault</div>
-        <div className="sub">Finanças</div>
+        <div className="sub">Finanças pessoais</div>
       </div>
     </div>
   );
 }
 
-/* ---- Dark logo for light backgrounds (error pages) -------- */
-function LogoMark({ size = 24 }) {
+/* ---- Dark ring-seal logo for light backgrounds (errors) --- */
+function LogoMark({ size = 30 }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <svg width={size} height={size} viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
-        <rect x="16" y="2.5" width="19" height="19" rx="3.5" transform="rotate(45 16 2.5)"
-          fill="var(--frost-deep)" />
-        <rect x="16" y="8.7" width="10.3" height="10.3" rx="2" transform="rotate(45 16 8.7)"
-          fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.85" />
-        <line x1="16" y1="2.5" x2="16" y2="29.5" stroke="#fff" strokeWidth="1.2" strokeOpacity="0.35" />
-      </svg>
-      <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-.015em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>Mithril Vault</div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+      <div className="mark-seal" style={{ width: size, height: size, fontSize: size * 0.48 }}>M</div>
+      <div style={{ fontFamily: 'var(--display)', fontWeight: 600, fontSize: 16, color: 'var(--ink)', whiteSpace: 'nowrap' }}>Mithril Vault</div>
     </div>
   );
 }
@@ -45,8 +33,8 @@ function LogoMark({ size = 24 }) {
 function BrandPanel({ eyebrow, head, lede, feats }) {
   return (
     <div className="brand-panel">
-      <div className="brand-diamond" />
-      <div className="brand-diamond inner" />
+      <div className="brand-ring" />
+      <div className="brand-ring inner" />
       <LogoLight />
 
       <div className="brand-body">

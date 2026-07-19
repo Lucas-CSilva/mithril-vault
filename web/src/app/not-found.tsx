@@ -1,5 +1,8 @@
 import Link from "next/link";
+
 import { Compass, LayoutGrid, ArrowLeft } from "lucide-react";
+
+import { RingSealLogo } from "@/shared/components/RingSealLogo";
 
 export default function NotFound() {
   return (
@@ -11,43 +14,18 @@ export default function NotFound() {
             "radial-gradient(90% 70% at 50% -10%, var(--accent-bg) 0%, transparent 55%)",
         }}
       />
-      <div className="border-border/50 pointer-events-none absolute top-[46%] left-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[96px] border" />
-      <div className="border-border pointer-events-none absolute top-[46%] left-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-[72px] border" />
+      <div
+        className="pointer-events-none absolute top-[46%] left-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full border opacity-50"
+        style={{ borderColor: "var(--line-2)", borderWidth: 1.5 }}
+      />
+      <div
+        className="pointer-events-none absolute top-[46%] left-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full border opacity-50"
+        style={{ borderColor: "var(--line)", borderWidth: 1.5 }}
+      />
 
       <div className="relative z-10 w-full max-w-[460px] text-center">
         <div className="mb-10 inline-flex items-center gap-[10px]">
-          <svg width={24} height={24} viewBox="0 0 32 32" fill="none">
-            <rect
-              x="16"
-              y="2.5"
-              width="19"
-              height="19"
-              rx="3.5"
-              transform="rotate(45 16 2.5)"
-              style={{ fill: "var(--frost-deep)" }}
-            />
-            <rect
-              x="16"
-              y="8.7"
-              width="10.3"
-              height="10.3"
-              rx="2"
-              transform="rotate(45 16 8.7)"
-              fill="none"
-              stroke="#fff"
-              strokeWidth="1.5"
-              strokeOpacity="0.85"
-            />
-            <line
-              x1="16"
-              y1="2.5"
-              x2="16"
-              y2="29.5"
-              stroke="#fff"
-              strokeWidth="1.2"
-              strokeOpacity="0.35"
-            />
-          </svg>
+          <RingSealLogo variant="dark" size={24} />
           <span className="text-foreground text-[15px] font-bold tracking-[-0.015em] whitespace-nowrap">
             Mithril Vault
           </span>

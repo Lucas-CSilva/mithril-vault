@@ -170,7 +170,7 @@ function Cards() {
             </div>
           </div>
 
-          <div className="card" style={{ padding: '20px 24px', background: 'linear-gradient(160deg, #f4f9f7, #eef4f8)' }}>
+          <div className="card" style={{ padding: '20px 24px', background: 'var(--accent-bg)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
               <span style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--frost-pine)', color: '#fff', display: 'grid', placeItems: 'center' }}><Icon name="flame" size={16} fill /></span>
               <h3 style={{ fontSize: 14, fontWeight: 700 }}>Melhor Dia de Compra</h3>

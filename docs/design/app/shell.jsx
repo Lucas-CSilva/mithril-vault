@@ -18,22 +18,47 @@ const PAGE_META = {
   subscriptions: { title: 'Assinaturas',    sub: 'Sua economia recorrente sob controle' },
 };
 
-function Logo({ size = 26, withText = true }) {
+function Logo({ size = 26, withText = true, theme }) {
+  theme = theme || document.documentElement.getAttribute('data-theme') || 'cofre';
+
+  // Typographic monogram — distinct treatment per direction (no geometric glyph)
+  let mark;
+  if (theme === 'mithril') {
+    mark = (
+      <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0, position: 'relative',
+        border: '1px solid var(--accent)', color: 'var(--accent)', display: 'grid', placeItems: 'center',
+        fontFamily: 'var(--display)', fontWeight: 500, fontSize: size * 0.5, lineHeight: 1 }}>
+        M
+        <span style={{ position: 'absolute', inset: 3, borderRadius: '50%', border: '1px solid var(--line-strong)' }} />
+      </div>
+    );
+  } else if (theme === 'pulse') {
+    mark = (
+      <div style={{ width: size, height: size, borderRadius: size * 0.28, flexShrink: 0,
+        background: 'var(--accent)', color: 'var(--btn-text)', display: 'grid', placeItems: 'center',
+        fontFamily: 'var(--display)', fontWeight: 700, fontSize: size * 0.56, lineHeight: 1 }}>M</div>
+    );
+  } else if (theme === 'vault') {
+    mark = (
+      <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0,
+        border: '1.5px solid var(--accent)', color: 'var(--accent)', display: 'grid', placeItems: 'center',
+        fontFamily: 'var(--display)', fontWeight: 600, fontSize: size * 0.5, lineHeight: 1 }}>M</div>
+    );
+  } else { // cofre
+    mark = (
+      <div style={{ width: size, height: size, borderRadius: '50%', flexShrink: 0,
+        background: 'var(--accent)', color: 'var(--btn-text)', display: 'grid', placeItems: 'center',
+        fontFamily: 'var(--display)', fontWeight: 600, fontSize: size * 0.62, lineHeight: 1 }}>M</div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-      <div style={{ width: size, height: size, position: 'relative', flexShrink: 0 }}>
-        <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-          <rect x="16" y="2.5" width="19" height="19" rx="3.5" transform="rotate(45 16 2.5)"
-            fill="var(--frost-deep)" />
-          <rect x="16" y="8.7" width="10.3" height="10.3" rx="2" transform="rotate(45 16 8.7)"
-            fill="none" stroke="#fff" strokeWidth="1.5" strokeOpacity="0.85" />
-          <line x1="16" y1="2.5" x2="16" y2="29.5" stroke="#fff" strokeWidth="1.2" strokeOpacity="0.35" />
-        </svg>
-      </div>
+      {mark}
       {withText && (
         <div style={{ lineHeight: 1.05 }}>
-          <div style={{ fontWeight: 700, fontSize: 15.5, letterSpacing: '-.015em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>Mithril Vault</div>
-          <div className="mono" style={{ fontSize: 9, letterSpacing: '.16em', color: 'var(--ink-4)', textTransform: 'uppercase', marginTop: 2 }}>Finanças</div>
+          <div style={{ fontFamily: 'var(--display)', fontWeight: (theme === 'cofre' || theme === 'mithril') ? 600 : 700, fontSize: 16, letterSpacing: (theme === 'cofre' || theme === 'mithril') ? '0' : '-.015em', color: 'var(--ink)', whiteSpace: 'nowrap' }}>Mithril Vault</div>
+          <div className="mono" style={{ fontSize: 9, letterSpacing: '.16em', color: 'var(--ink-4)', textTransform: 'uppercase', marginTop: 2 }}>Finanças pessoais</div>
         </div>
       )}
     </div>
@@ -64,7 +89,7 @@ function NavItem({ item, active, compact, onClick }) {
   );
 }
 
-function Sidebar({ route, setRoute, compact, mobileOpen, setMobileOpen }) {
+function Sidebar({ route, setRoute, compact, mobileOpen, setMobileOpen, theme }) {
   return (
     <aside style={{
       width: compact ? 76 : 'var(--sidebar-w)', flexShrink: 0,
@@ -75,7 +100,7 @@ function Sidebar({ route, setRoute, compact, mobileOpen, setMobileOpen }) {
       transition: 'width .2s',
     }}>
       <div style={{ padding: compact ? '0 0 22px' : '0 6px 24px', display:'flex', justifyContent: compact ? 'center' : 'flex-start' }}>
-        <Logo withText={!compact} size={compact ? 28 : 26} />
+        <Logo withText={!compact} size={compact ? 28 : 26} theme={theme} />
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -114,7 +139,7 @@ function Topbar({ route, onMenu, month, setMonth }) {
   return (
     <header style={{
       display: 'flex', alignItems: 'center', gap: 16, padding: '18px 30px',
-      borderBottom: '1px solid var(--line)', background: 'rgba(243,245,249,0.82)',
+      borderBottom: '1px solid var(--line)', background: 'var(--topbar-bg)',
       backdropFilter: 'blur(12px)', position: 'sticky', top: 0, zIndex: 20,
     }}>
       <button className="mv-menu-btn" onClick={onMenu} style={{ display: 'none', color: 'var(--ink-2)' }}>
@@ -158,7 +183,7 @@ function Topbar({ route, onMenu, month, setMonth }) {
 
       <button style={{
         display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', height: 40,
-        background: 'var(--frost-deep)', color: '#fff', borderRadius: 11,
+        background: 'var(--frost-deep)', color: 'var(--btn-text)', borderRadius: 11,
         fontWeight: 600, fontSize: 13.5, boxShadow: 'var(--sh-sm)',
       }}>
         <Icon name="plus" size={17} stroke={2.4} />
@@ -168,7 +193,7 @@ function Topbar({ route, onMenu, month, setMonth }) {
   );
 }
 
-function Shell({ route, setRoute, navLayout, children }) {
+function Shell({ route, setRoute, navLayout, theme, children }) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const compact = navLayout === 'compact';
 
@@ -176,7 +201,7 @@ function Shell({ route, setRoute, navLayout, children }) {
     <div className="mv-shell" style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
       {/* desktop sidebar */}
       <div className="mv-sidebar-wrap">
-        <Sidebar route={route} setRoute={setRoute} compact={compact} />
+        <Sidebar route={route} setRoute={setRoute} compact={compact} theme={theme} />
       </div>
 
       {/* mobile drawer */}
@@ -184,7 +209,7 @@ function Shell({ route, setRoute, navLayout, children }) {
         <div className="mv-drawer" onClick={() => setMobileOpen(false)}
           style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(46,52,64,.4)', backdropFilter: 'blur(2px)' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ width: 'var(--sidebar-w)', height: '100%' }}>
-            <Sidebar route={route} setRoute={setRoute} compact={false} setMobileOpen={setMobileOpen} />
+            <Sidebar route={route} setRoute={setRoute} compact={false} setMobileOpen={setMobileOpen} theme={theme} />
           </div>
         </div>
       )}

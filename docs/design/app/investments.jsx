@@ -5,7 +5,7 @@ const INV_TYPE_LABEL = {
   LCI:'LCI', LCA:'LCA', CRI:'CRI', CRA:'CRA', DEBENTURE:'Debênture',
 };
 const INV_TYPE_COLOR = {
-  CDB:'#5E81AC', TESOURO_SELIC:'#88C0D0', TESOURO_IPCA:'#8FBCBB', LCI:'#7E9F69', CDB2:'#81A1C1',
+  CDB:'#3C5070', TESOURO_SELIC:'#5E7A96', TESOURO_IPCA:'#3E6B82', LCI:'#9E7A4E', CDB2:'#6E7E96',
 };
 
 function irRate(days) {
@@ -48,9 +48,9 @@ function Investments() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* hero overview */}
       <div className="card fade-in" style={{ padding: 0, display: 'grid', gridTemplateColumns: '1.1fr 1.3fr' }}>
-        <div style={{ padding: '24px 28px', borderRight: '1px solid var(--line)', background: 'linear-gradient(160deg, #fbfcfe, #f4f7fb)' }}>
+        <div style={{ padding: '24px 28px', borderRight: '1px solid var(--line)', background: 'var(--hero-grad)' }}>
           <span className="eyebrow">Patrimônio Investido (bruto)</span>
-          <div className="num" style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-.03em', marginTop: 10 }}>{MV.fmtBRL(totGross)}</div>
+          <div className="num" style={{ fontFamily: 'var(--display)', fontSize: 42, fontWeight: 500, letterSpacing: '-.02em', marginTop: 10 }}>{MV.fmtBRL(totGross)}</div>
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <span className="pill" style={{ background: 'var(--pos-bg)', color: 'var(--pos-ink)' }}><Icon name="arrowUpRight" size={12} stroke={2.5} /> {MV.fmtSignedPct(grossYieldPct)} bruto</span>
             <span className="pill" style={{ background: 'var(--surface-3)', color: 'var(--ink-3)' }}>{MV.fmtSignedPct(netYieldPct)} líquido</span>
