@@ -61,7 +61,7 @@ micrometer-context-propagation  = { module = "io.micrometer:context-propagation"
 # ── Mongock ────────────────────────────────────────────────────────────────
 mongock-bom              = { module = "io.mongock:mongock-bom",                  version.ref = "mongock" }
 mongock-springboot       = { module = "io.mongock:mongock-springboot" }
-mongock-mongodb-springdata = { module = "io.mongock:mongodb-springdata-v4-driver" }
+mongock-mongodb-reactive = { module = "io.mongock:mongodb-reactive-driver" }
 
 [plugins]
 spring-boot = { id = "org.springframework.boot",  version.ref = "spring-boot" }

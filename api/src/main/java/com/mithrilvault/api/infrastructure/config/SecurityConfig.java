@@ -11,6 +11,7 @@ import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import reactor.core.publisher.Mono;
 
 @Configuration
@@ -19,9 +20,12 @@ public class SecurityConfig {
 
   @Bean
   public SecurityWebFilterChain securityWebFilterChain(
-      ServerHttpSecurity http, AppProperties appProperties) {
+      ServerHttpSecurity http,
+      AppProperties appProperties,
+      CorsConfigurationSource corsConfigurationSource) {
     String[] publicPaths = appProperties.security().publicPaths().toArray(String[]::new);
-    return http.csrf(ServerHttpSecurity.CsrfSpec::disable)
+    return http.cors(cors -> cors.configurationSource(corsConfigurationSource))
+        .csrf(ServerHttpSecurity.CsrfSpec::disable)
         .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
         .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
         .logout(ServerHttpSecurity.LogoutSpec::disable)

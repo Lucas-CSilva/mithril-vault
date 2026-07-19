@@ -1,3 +1,7 @@
+mongock:
+  migration-scan-package:
+    - com.mithrilvault.api.infrastructure.persistence.migration
+
 spring:
   webflux:
     base-path: /mithril-vault

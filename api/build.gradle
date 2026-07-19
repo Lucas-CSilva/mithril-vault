@@ -74,7 +74,7 @@ dependencies {
 
 	implementation platform(libs.mongock.bom)
 	implementation libs.mongock.springboot
-	implementation libs.mongock.mongodb.springdata
+	implementation libs.mongock.mongodb.reactive
 
 	// ── Development ───────────────────────────
 	developmentOnly libs.spring.boot.devtools

@@ -3,6 +3,7 @@ import {
   LayoutGrid,
   PiggyBank,
   RefreshCw,
+  Tags,
   Target,
   Wallet,
   type LucideIcon,
@@ -21,6 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/planning", label: "Planejamento", icon: Target },
   { href: "/investments", label: "Investimentos", icon: PiggyBank },
   { href: "/subscriptions", label: "Assinaturas", icon: RefreshCw },
+  { href: "/categories", label: "Categorias", icon: Tags },
 ];
 
 export const PAGE_META: Record<string, { title: string; sub: string }> = {
@@ -41,5 +43,9 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   "/subscriptions": {
     title: "Assinaturas",
     sub: "Sua economia recorrente sob controle",
+  },
+  "/categories": {
+    title: "Categorias",
+    sub: "Organize suas transações por categoria e subcategoria",
   },
 };

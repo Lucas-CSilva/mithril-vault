@@ -67,14 +67,18 @@ public class SystemCategoriesMigration {
   private final SystemCategoryIds systemCategoryIds;
 
   @Execution
-  public Mono<Void> changeSet() {
-    return seedTopLevelCategories().then(seedSubcategories());
+  public void changeSet() {
+    // Mongock's execution contract is synchronous — it never subscribes to a
+    // returned reactive type, so the composed pipeline must be blocked here,
+    // once, at this boundary. This runs on Mongock's own startup thread,
+    // before the server accepts requests, not on a WebFlux request thread.
+    seedTopLevelCategories().then(seedSubcategories()).block();
   }
 
   @RollbackExecution
-  public Mono<Void> rollback() {
+  public void rollback() {
     Query query = Query.query(Criteria.where(CategoryDocument.Fields.isSystem).is(true));
-    return mongoTemplate.remove(query, CategoryDocument.class).then();
+    mongoTemplate.remove(query, CategoryDocument.class).then().block();
   }
 
   private Mono<Void> seedTopLevelCategories() {
