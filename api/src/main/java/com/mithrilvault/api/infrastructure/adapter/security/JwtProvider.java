@@ -1,4 +1,4 @@
-package com.mithrilvault.api.infrastructure.config;
+package com.mithrilvault.api.infrastructure.adapter.security;
 
 import com.mithrilvault.api.domain.config.AppProperties;
 import com.mithrilvault.api.domain.port.TokenProvider;

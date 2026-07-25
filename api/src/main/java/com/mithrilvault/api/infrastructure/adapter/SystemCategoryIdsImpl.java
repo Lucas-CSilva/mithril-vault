@@ -1,4 +1,4 @@
-package com.mithrilvault.api.infrastructure.config;
+package com.mithrilvault.api.infrastructure.adapter;
 
 import com.mithrilvault.api.domain.config.SystemCategoryIds;
 import org.springframework.stereotype.Component;

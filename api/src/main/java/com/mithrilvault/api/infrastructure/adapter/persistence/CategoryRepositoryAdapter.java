@@ -1,4 +1,4 @@
-package com.mithrilvault.api.infrastructure.adapter;
+package com.mithrilvault.api.infrastructure.adapter.persistence;
 
 import com.mithrilvault.api.domain.exception.ConflictException;
 import com.mithrilvault.api.domain.model.Category;

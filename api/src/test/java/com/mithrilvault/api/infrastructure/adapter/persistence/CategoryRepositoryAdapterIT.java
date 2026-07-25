@@ -1,4 +1,4 @@
-package com.mithrilvault.api.infrastructure.adapter;
+package com.mithrilvault.api.infrastructure.adapter.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

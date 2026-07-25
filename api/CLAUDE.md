@@ -32,8 +32,13 @@ com.mithrilvault.api/
 │   ├── response/        # *Response Records — only when domain isn't a safe response shape
 │   └── mapper/          # domain → response (only where a *Response exists)
 └── infrastructure/      # Output adapters
-    ├── persistence/     # Mongo documents, repositories, aggregation pipelines
-    ├── config/          # Spring / WebFlux / security / Mongo / transactions
+    ├── persistence/     # Mongo documents, repositories (thin marker interfaces)
+    ├── adapter/         # Domain port implementations, grouped by technical kind
+    │   ├── persistence/ # *RepositoryAdapter — owner-scoped queries/aggregations via ReactiveMongoTemplate
+    │   └── security/    # JwtProvider, BcryptPasswordHasher — non-persistence port implementations
+    ├── config/          # Spring/WebFlux/security/Mongo/transactions *wiring* only (@Configuration,
+    │                    # @Bean methods, framework extension points like WebFluxConfigurer) —
+    │                    # not domain port implementations, those go in adapter/
     └── mapper/          # Persistence entity ↔ Domain (MapStruct)
 ```
 

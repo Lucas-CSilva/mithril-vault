@@ -3,6 +3,7 @@ package com.mithrilvault.api.application.controller;
 import com.mithrilvault.api.application.mapper.AccountResponseMapper;
 import com.mithrilvault.api.application.response.AccountResponse;
 import com.mithrilvault.api.application.response.BalanceHistoryResponse;
+import com.mithrilvault.api.application.security.CurrentOwnerId;
 import com.mithrilvault.api.domain.command.account.CreateAccountCommand;
 import com.mithrilvault.api.domain.command.account.ReconcileAccountCommand;
 import com.mithrilvault.api.domain.command.account.UpdateAccountCommand;
@@ -17,7 +18,6 @@ import com.mithrilvault.api.domain.queryhandler.account.ListAccountQueryHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -40,8 +40,7 @@ public class AccountController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<AccountResponse> create(
-      @RequestBody @Valid CreateAccountCommand command,
-      @AuthenticationPrincipal(expression = "subject") String ownerId) {
+      @RequestBody @Valid CreateAccountCommand command, @CurrentOwnerId String ownerId) {
     return createCommandHandler
         .handle(ownerId, command)
         .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
@@ -51,7 +50,7 @@ public class AccountController {
   public Mono<AccountResponse> update(
       @PathVariable String id,
       @RequestBody @Valid UpdateAccountCommand command,
-      @AuthenticationPrincipal(expression = "subject") String ownerId) {
+      @CurrentOwnerId String ownerId) {
     return updateCommandHandler
         .handle(id, ownerId, command)
         .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
@@ -59,22 +58,19 @@ public class AccountController {
 
   @DeleteMapping(path = "/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public Mono<Void> deactivate(
-      @PathVariable String id, @AuthenticationPrincipal(expression = "subject") String ownerId) {
+  public Mono<Void> deactivate(@PathVariable String id, @CurrentOwnerId String ownerId) {
     return deactivateCommandHandler.handle(id, ownerId);
   }
 
   @PostMapping(path = "/{id}/reactivate")
-  public Mono<AccountResponse> reactivate(
-      @PathVariable String id, @AuthenticationPrincipal(expression = "subject") String ownerId) {
+  public Mono<AccountResponse> reactivate(@PathVariable String id, @CurrentOwnerId String ownerId) {
     return reactivateCommandHandler
         .handle(id, ownerId)
         .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
   }
 
   @GetMapping(path = "/{id}")
-  public Mono<AccountResponse> get(
-      @PathVariable String id, @AuthenticationPrincipal(expression = "subject") String ownerId) {
+  public Mono<AccountResponse> get(@PathVariable String id, @CurrentOwnerId String ownerId) {
     return getQueryHandler
         .handle(id, ownerId)
         .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
@@ -83,7 +79,7 @@ public class AccountController {
   @GetMapping
   public Flux<AccountResponse> list(
       @RequestParam(defaultValue = "false") boolean includeInactive,
-      @AuthenticationPrincipal(expression = "subject") String ownerId) {
+      @CurrentOwnerId String ownerId) {
     return listQueryHandler
         .handle(ownerId, includeInactive)
         .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
@@ -93,7 +89,7 @@ public class AccountController {
   public Mono<AccountResponse> reconcile(
       @PathVariable String id,
       @RequestBody @Valid ReconcileAccountCommand command,
-      @AuthenticationPrincipal(expression = "subject") String ownerId) {
+      @CurrentOwnerId String ownerId) {
     return reconcileCommandHandler
         .handle(id, ownerId, command)
         .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
@@ -101,7 +97,7 @@ public class AccountController {
 
   @GetMapping(path = "/{id}/balance-history")
   public Mono<BalanceHistoryResponse> balanceHistory(
-      @PathVariable String id, @AuthenticationPrincipal(expression = "subject") String ownerId) {
+      @PathVariable String id, @CurrentOwnerId String ownerId) {
     return balanceHistoryQueryHandler
         .handle(id, ownerId)
         .collectList()

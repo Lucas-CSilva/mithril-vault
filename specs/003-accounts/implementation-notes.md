@@ -26,7 +26,7 @@ application/response/AccountResponse.java (+ BalanceHistoryResponse, BalancePoin
 application/mapper/AccountResponseMapper.java
 infrastructure/persistence/document/AccountDocument.java
 infrastructure/persistence/AccountMongoRepository.java
-infrastructure/adapter/AccountRepositoryAdapter.java
+infrastructure/adapter/persistence/AccountRepositoryAdapter.java
 infrastructure/mapper/AccountMapper.java (MapStruct, domain ↔ document)
 ```
 
@@ -54,13 +54,14 @@ per the "least disclosure" rule in `api/CLAUDE.md`.
 
 ## 3. Tenancy — where `ownerId` comes from
 
-There is **no custom `ReactiveSecurityContextHolder` plumbing** in this codebase — don't add any.
-The JWT subject is injected straight into controller methods:
+The JWT subject is injected straight into controller methods via a custom `@CurrentOwnerId`
+argument annotation (`application/security/CurrentOwnerId.java`), resolved by
+`CurrentOwnerIdArgumentResolver` (`infrastructure/config/`), which reads
+`ReactiveSecurityContextHolder` and calls `Jwt.getSubject()`:
 
 ```java
 @GetMapping
-public Flux<CategoryResponse> listCategories(
-    @AuthenticationPrincipal(expression = "subject") String ownerId) { ... }
+public Flux<CategoryResponse> listCategories(@CurrentOwnerId String ownerId) { ... }
 ```
 
 `ownerId` is then threaded explicitly through every command/query handler call
@@ -73,7 +74,7 @@ touch this for Accounts; it's already wired for the whole app.
 
 Docs: [Spring Security reactive OAuth2 resource server — JWT](https://docs.spring.io/spring-security/reference/reactive/oauth2/resource-server/jwt.html)
 (concept: `ReactiveJwtDecoder`, how the `Jwt` principal is built and exposed to
-`@AuthenticationPrincipal`).
+`ReactiveSecurityContextHolder`).
 
 ## 4. Repository & queries
 

@@ -1,4 +1,4 @@
-package com.mithrilvault.api.infrastructure.adapter;
+package com.mithrilvault.api.infrastructure.adapter.persistence;
 
 import com.mithrilvault.api.domain.model.RefreshToken;
 import com.mithrilvault.api.domain.port.RefreshTokenRepository;

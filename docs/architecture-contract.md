@@ -420,8 +420,11 @@ trigger an amendment.
   uses replica-set topology (otherwise transactions error). Property path is **`spring.mongodb.uri`**
   — Spring Boot 4 dropped the `spring.data.` prefix; do not "fix" it back.
 - ⬜ Define the `ownerId` indexes per collection in each feature's `data-model.md` (P8).
-- ⬜ Replace `@AuthenticationPrincipal(expression = "subject")` (a SpEL string re-typed in every
-  controller — `CategoryController`, `AccountController`, and growing) with a custom `@CurrentOwnerId`
-  argument annotation backed by a reactive `HandlerMethodArgumentResolver` that reads
-  `ReactiveSecurityContextHolder` and calls `Jwt.getSubject()` directly. Removes the runtime-only
-  failure mode of a typo'd SpEL expression and centralizes the P2 identity-extraction point.
+- ✅ Replaced `@AuthenticationPrincipal(expression = "subject")` (a SpEL string re-typed in every
+  controller) with a custom `@CurrentOwnerId` argument annotation
+  (`application/security/CurrentOwnerId.java`) backed by a reactive `HandlerMethodArgumentResolver`
+  (`infrastructure/config/CurrentOwnerIdArgumentResolver.java`, registered in
+  `infrastructure/config/WebFluxConfig.java`) that reads `ReactiveSecurityContextHolder` and calls
+  `Jwt.getSubject()` directly. Removes the runtime-only failure mode of a typo'd SpEL expression
+  and centralizes the P2 identity-extraction point. All controllers use `@CurrentOwnerId String
+  ownerId` going forward.
