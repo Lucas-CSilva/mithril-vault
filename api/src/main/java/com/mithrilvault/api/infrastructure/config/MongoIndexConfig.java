@@ -7,6 +7,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.config.EnableReactiveMongoAuditing;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
+import org.springframework.data.mongodb.core.query.Collation;
 
 @Configuration
 @EnableReactiveMongoAuditing
@@ -30,6 +31,14 @@ public class MongoIndexConfig {
               .unique()
               .sparse();
 
+      Index accountOwnerIndex = new Index().on("ownerId", Sort.Direction.ASC);
+      Index accountNameIndex =
+          new Index()
+              .on("ownerId", Sort.Direction.ASC)
+              .on("name", Sort.Direction.ASC)
+              .unique()
+              .collation(Collation.of("pt").strength(2));
+
       mongoTemplate
           .indexOps("users")
           .createIndex(emailIndex)
@@ -39,6 +48,8 @@ public class MongoIndexConfig {
           .then(mongoTemplate.indexOps("categories").createIndex(categoryOwnerIndex))
           .then(mongoTemplate.indexOps("categories").createIndex(categorySystemIndex))
           .then(mongoTemplate.indexOps("categories").createIndex(categoryNameIndex))
+          .then(mongoTemplate.indexOps("accounts").createIndex(accountOwnerIndex))
+          .then(mongoTemplate.indexOps("accounts").createIndex(accountNameIndex))
           .subscribe();
     };
   }

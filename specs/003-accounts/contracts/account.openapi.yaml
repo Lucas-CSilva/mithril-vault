@@ -91,7 +91,7 @@ paths:
 
     patch:
       summary: Update account metadata
-      description: Cannot change type after creation. Cannot modify initialBalance directly (use reconcile endpoint).
+      description: Cannot modify initialBalance directly (use reconcile endpoint) or isActive (use deactivate/reactivate).
       operationId: updateAccount
       tags: [accounts]
       requestBody:
@@ -124,6 +124,27 @@ paths:
       responses:
         "204":
           description: Account deactivated
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /accounts/{id}/reactivate:
+    parameters:
+      - $ref: "#/components/parameters/AccountId"
+
+    post:
+      summary: Reactivate a previously deactivated account
+      description: Sets isActive = true. Symmetric with the deactivate (DELETE) endpoint.
+      operationId: reactivateAccount
+      tags: [accounts]
+      responses:
+        "200":
+          description: Account reactivated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -255,6 +276,9 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        type:
+          type: string
+          enum: [CHECKING, SAVINGS, CASH, DIGITAL]
         institution:
           type: string
           maxLength: 100
