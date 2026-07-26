@@ -18,14 +18,16 @@ The dashboard is a pure read-side aggregation over existing collections. No data
 ### Saldo Líquido Disponível
 
 ```
-saldoLiquido = SUM(account.initialBalance + creditTxnSum - debitTxnSum, for all ACTIVE accounts owned by user)
+saldoLiquido = SUM(account.currentBalance, for all ACTIVE accounts owned by user)
              - SUM(invoice.totalAmount, for all OPEN invoices owned by user)
 ```
 
-Single aggregation pipeline:
-1. `$lookup` transactions per account → compute `currentBalance` per account → `$sum`
-2. `$lookup` OPEN invoices → `$sum(totalAmount)` (itself derived from a nested `$lookup` on transactions)
-3. Subtract step 2 from step 1
+Per `docs/adr/ADR-003-materialized-derived-balances.md`, `account.currentBalance` and
+`invoice.totalAmount` are materialized fields (003-accounts, 005-cards), not aggregated at read
+time. Saldo Líquido is therefore a **second-order projection**: it composes two already-computed
+projections rather than re-deriving either from `transactions`. The read becomes a cheap in-memory
+sum over two small `$match` + `$sum(field)` queries (summing a stored field, not aggregating
+transaction history) — no `$lookup` into `transactions` needed for this KPI.
 
 ### KPI Cards (current calendar month)
 

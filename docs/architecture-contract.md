@@ -87,10 +87,14 @@ event sourcing — and we do **not** add a parallel inbound DTO layer just to mi
 - **Reads:** a `*Query` is handled by a `*QueryHandler` (or read service) behind dedicated **read
   ports** that return projections/read models. Reads **MUST NOT** be ad-hoc
   controller→repository calls.
-- **Derived values are computed, never stored, and have one owner.** `currentBalance`, invoice
-  `totalAmount`, budget `spentAmount`, goal projections, and dashboard "Saldo Líquido" are
-  produced by read-side aggregation (MongoDB aggregation pipelines in `infrastructure`, exposed
-  through read ports). No code path may persist a derived value.
+- **Derived values are materialized projections and have one owner.** `currentBalance`, invoice
+  `totalAmount`, budget `spentAmount`, goal projections, and dashboard "Saldo Líquido" are stored
+  fields, kept in sync by a dedicated projector reacting to the owning event log (a MongoDB
+  Change Stream over `transactions`, applied via idempotent `$inc`) — never updated ad hoc from
+  application code. The "one owner" rule still holds: the only writer of a derived field is its
+  projector, plus a periodic reconciliation job that recomputes ground truth from a snapshot +
+  deltas and self-heals drift. See `docs/adr/ADR-003-materialized-derived-balances.md` for the
+  full pattern (projector, checkpointing, snapshotting, reconciliation) and rationale.
 
 *Rationale:* this domain is read-dominated; its hard problems are aggregations. We give reads a
 defined, testable home without the cost of full CQRS, and we avoid the boilerplate of a
@@ -397,7 +401,8 @@ A rule is only real if a machine or a reviewer checks it.
   for user-owned aggregates.
 - **Response exposure (P6):** review that responses carry no sensitive fields and no fields the
   client doesn't need (least disclosure) — whether returning a domain model or a `*Response`.
-- **PR checklist:** money rule (P1), tenancy scoping (P2), no derived value persisted (P4),
+- **PR checklist:** money rule (P1), tenancy scoping (P2), derived values only written by their
+  projector/reconciler (P4, ADR-003),
   response least-disclosure (P6), transactional + idempotent money ops (P7), public-path set
   matches config (P12).
 
