@@ -6,6 +6,7 @@ import com.mithrilvault.api.domain.exception.DomainException;
 import com.mithrilvault.api.domain.exception.ErrorCode;
 import com.mithrilvault.api.domain.exception.ForbiddenException;
 import com.mithrilvault.api.domain.exception.NotFoundException;
+import com.mithrilvault.api.domain.exception.NotImplementedException;
 import com.mithrilvault.api.domain.exception.UnauthorizedException;
 import com.mithrilvault.api.domain.model.DomainError;
 import jakarta.validation.ConstraintViolationException;
@@ -41,6 +42,13 @@ public class GlobalExceptionHandler {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ErrorResponse handleNotFound(NotFoundException ex) {
     log.warn("Not found: {}", ex.getMessage());
+    return ErrorResponse.of(ex.getError());
+  }
+
+  @ExceptionHandler(NotImplementedException.class)
+  @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
+  public ErrorResponse handleNotImplemented(NotImplementedException ex) {
+    log.warn("Not implemented: {}", ex.getMessage());
     return ErrorResponse.of(ex.getError());
   }
 

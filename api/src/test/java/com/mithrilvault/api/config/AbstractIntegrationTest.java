@@ -2,6 +2,7 @@ package com.mithrilvault.api.config;
 
 import com.mithrilvault.api.steps.AccountSteps;
 import com.mithrilvault.api.steps.CategorySteps;
+import com.mithrilvault.api.steps.TransactionSteps;
 import com.mithrilvault.api.steps.UserSteps;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -34,6 +35,7 @@ public abstract class AbstractIntegrationTest {
   protected UserSteps userSteps = new UserSteps();
   protected CategorySteps categorySteps = new CategorySteps();
   protected AccountSteps accountSteps = new AccountSteps();
+  protected TransactionSteps transactionSteps = new TransactionSteps();
 
   @BeforeEach
   void initWebTestClient() {
@@ -41,5 +43,6 @@ public abstract class AbstractIntegrationTest {
     userSteps.init(webTestClient);
     categorySteps.init(webTestClient);
     accountSteps.init(webTestClient);
+    transactionSteps.init(webTestClient);
   }
 }
