@@ -30,6 +30,7 @@
 | `fitid` | String | Nullable. OFX FITID. Dedup key for OFX imports. |
 | `importSource` | String | Nullable. Enum: `MANUAL`, `CSV`, `OFX` |
 | `isReconciliation` | Boolean | `true` if this is an adjusting transaction created by reconciliation |
+| `appliedProjections` | Array\<String\> | Defaults to `[]` on insert. Idempotency guard for the materialized-balance pipeline — e.g. `["accountBalance"]` once `AccountBalanceProjector` has applied this transaction. See `docs/adr/ADR-003-materialized-derived-balances.md`. |
 | `createdAt` | Date | UTC instant |
 | `_version` | Int64 | Optimistic locking |
 
