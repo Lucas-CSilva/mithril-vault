@@ -40,9 +40,10 @@ junit-platform-launcher      = { module = "org.junit.platform:junit-platform-lau
 
 
 # ── Testcontainers (explicit versions — not in Spring BOM under native platform()) ──
-testcontainers-bom     = { module = "org.testcontainers:testcontainers-bom",  version.ref = "testcontainers" }
-testcontainers-junit   = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
-testcontainers-mongodb = { module = "org.testcontainers:testcontainers-mongodb",       version.ref = "testcontainers" }
+testcontainers-bom       = { module = "org.testcontainers:testcontainers-bom",  version.ref = "testcontainers" }
+testcontainers-junit     = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
+testcontainers-mongodb   = { module = "org.testcontainers:testcontainers-mongodb",       version.ref = "testcontainers" }
+testcontainers-localstack = { module = "org.testcontainers:testcontainers-localstack", version.ref = "testcontainers" }
 
 # ── Observability & Logging ────────────────────────────────────────────────────
 logstash-logback-encoder = { module = "net.logstash.logback:logstash-logback-encoder", version.ref = "logstash-logback" }
@@ -52,6 +53,7 @@ archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref
 
 # ── AWS / Spring Cloud AWS ─────────────────────────────────────────────────
 spring-cloud-aws-secrets = { module = "io.awspring.cloud:spring-cloud-aws-starter-secrets-manager", version.ref = "spring-cloud-aws" }
+spring-cloud-aws-sqs = { module = "io.awspring.cloud:spring-cloud-aws-starter-sqs", version.ref = "spring-cloud-aws" }
 
 # ── Spring Security / Micrometer (BOM-managed — no version needed) ─────────
 spring-security-oauth2-jose     = { module = "org.springframework.security:spring-security-oauth2-jose" }

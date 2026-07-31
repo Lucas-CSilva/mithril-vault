@@ -14,6 +14,7 @@ public record Account(
     AccountType type,
     String institution,
     Long initialBalance,
+    Long currentBalance,
     String color,
     Boolean isActive,
     Instant createdAt,

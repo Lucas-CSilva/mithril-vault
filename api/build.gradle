@@ -71,6 +71,7 @@ dependencies {
 	implementation libs.micrometer.context.propagation
 	implementation libs.logstash.logback.encoder
 	implementation libs.spring.cloud.aws.secrets
+	implementation libs.spring.cloud.aws.sqs
 
 	implementation platform(libs.mongock.bom)
 	implementation libs.mongock.springboot
@@ -98,6 +99,7 @@ dependencies {
 	testImplementation libs.reactor.test
 	testImplementation libs.testcontainers.junit
 	testImplementation libs.testcontainers.mongodb
+	testImplementation libs.testcontainers.localstack
 	testImplementation libs.archunit.junit5
 	testRuntimeOnly    libs.junit.platform.launcher
 }

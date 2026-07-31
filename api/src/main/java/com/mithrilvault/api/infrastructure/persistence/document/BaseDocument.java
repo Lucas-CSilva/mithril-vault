@@ -7,6 +7,7 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.Version;
 
 @Getter
 @Setter
@@ -21,4 +22,6 @@ public abstract class BaseDocument {
   @CreatedDate private Instant createdAt;
 
   @LastModifiedDate private Instant updatedAt;
+
+  @Version private Long version;
 }

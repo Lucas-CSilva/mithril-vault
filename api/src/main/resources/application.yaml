@@ -67,3 +67,7 @@ app:
   jwt:
     access-token-ttl-seconds: 900
     refresh-token-ttl-seconds: 2592000
+  leader:
+    ttl: 30s
+    max-retries: 3
+    retry-backoff: 300ms

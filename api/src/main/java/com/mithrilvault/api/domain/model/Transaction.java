@@ -31,6 +31,7 @@ public record Transaction(
     String fitid,
     ImportSource importSource,
     Boolean isReconciliation,
+    Set<String> appliedProjections,
     Instant createdAt,
     Instant updatedAt,
     Long version) {
@@ -49,6 +50,7 @@ public record Transaction(
         .account(new AccountSummary(account.id(), account.name()))
         .tags(command.tags())
         .notes(command.notes())
+        .appliedProjections(Set.of())
         .build();
   }
 
@@ -66,6 +68,7 @@ public record Transaction(
         .card(new CardSummary(card.id(), card.name()))
         .tags(command.tags())
         .notes(command.notes())
+        .appliedProjections(Set.of())
         .build();
   }
 
@@ -84,6 +87,7 @@ public record Transaction(
         .invoice(new InvoiceSummary(invoice.id()))
         .tags(command.tags())
         .notes(command.notes())
+        .appliedProjections(Set.of())
         .build();
   }
 }

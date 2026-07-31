@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
-import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
@@ -42,5 +41,5 @@ public class TransactionDocument extends BaseDocument {
   private String fitid;
   private ImportSource importSource;
   private Boolean isReconciliation;
-  @Version private Long version;
+  private Set<String> appliedProjections;
 }
