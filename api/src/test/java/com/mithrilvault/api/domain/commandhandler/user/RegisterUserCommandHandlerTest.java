@@ -50,7 +50,8 @@ class RegisterUserCommandHandlerTest {
                       user.passwordHash(),
                       user.displayName(),
                       user.status(),
-                      java.time.Instant.now()));
+                      java.time.Instant.now(),
+                      0L));
             });
 
     StepVerifier.create(handler.handle(RegisterUserCommands.valid()))

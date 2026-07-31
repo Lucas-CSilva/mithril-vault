@@ -20,7 +20,8 @@ public final class RefreshTokens {
         NOW.plusSeconds(TOKEN_TTL_SECONDS),
         null,
         null,
-        NOW);
+        NOW,
+        0L);
   }
 
   public static RefreshToken expired(String userId) {
@@ -31,7 +32,8 @@ public final class RefreshTokens {
         NOW.minusSeconds(60),
         null,
         null,
-        NOW.minusSeconds(TOKEN_TTL_SECONDS + 60));
+        NOW.minusSeconds(TOKEN_TTL_SECONDS + 60),
+        0L);
   }
 
   public static RefreshToken revoked(String userId) {
@@ -42,7 +44,8 @@ public final class RefreshTokens {
         NOW.plusSeconds(TOKEN_TTL_SECONDS),
         NOW.minusSeconds(30),
         null,
-        NOW.minusSeconds(60));
+        NOW.minusSeconds(60),
+        0L);
   }
 
   public static RefreshToken newlyCreated(String userId) {

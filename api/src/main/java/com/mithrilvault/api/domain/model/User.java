@@ -10,4 +10,5 @@ public record User(
     String passwordHash,
     String displayName,
     UserStatus status,
-    Instant createdAt) {}
+    Instant createdAt,
+    Long version) {}

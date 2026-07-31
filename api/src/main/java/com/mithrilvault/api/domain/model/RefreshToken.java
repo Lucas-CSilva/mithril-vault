@@ -11,7 +11,8 @@ public record RefreshToken(
     Instant expiresAt,
     Instant revokedAt,
     String replacedBy,
-    Instant createdAt) {
+    Instant createdAt,
+    Long version) {
 
   public RefreshToken revoke(String newTokenId) {
     return RefreshToken.builder()
@@ -22,6 +23,7 @@ public record RefreshToken(
         .revokedAt(Instant.now())
         .replacedBy(newTokenId)
         .createdAt(this.createdAt())
+        .version(this.version())
         .build();
   }
 
@@ -33,6 +35,7 @@ public record RefreshToken(
         .expiresAt(this.expiresAt())
         .revokedAt(Instant.now())
         .createdAt(this.createdAt())
+        .version(this.version())
         .build();
   }
 }

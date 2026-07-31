@@ -10,4 +10,5 @@ public record Category(
     String icon,
     String color,
     boolean isSystem,
-    String ownerId) {}
+    String ownerId,
+    Long version) {}
