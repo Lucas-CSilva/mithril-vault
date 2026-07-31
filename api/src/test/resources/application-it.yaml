@@ -7,7 +7,19 @@ spring:
   autoconfigure:
     exclude:
       - io.awspring.cloud.autoconfigure.config.secretsmanager.SecretsManagerAutoConfiguration
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+      credentials:
+        access-key: test
+        secret-key: test
 
 app:
   jwt:
     secret-key: integration-test-secret-not-for-production-use!!
+  # Off by default so unrelated *IT tests don't run a live change-stream listener in the
+  # background (polling Mongo, hitting real AWS SQS). AccountBalanceChangeStreamListenerIT
+  # re-enables it explicitly via @TestPropertySource.
+  projections:
+    enabled: false
