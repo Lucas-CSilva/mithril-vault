@@ -1,12 +1,12 @@
 package com.mithrilvault.api.infrastructure.mapper;
 
-import com.mithrilvault.api.domain.config.MapperConfig;
+import com.mithrilvault.api.domain.config.MapperBaseConfig;
 import com.mithrilvault.api.domain.model.Account;
 import com.mithrilvault.api.infrastructure.persistence.document.AccountDocument;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(config = MapperConfig.class)
+@Mapper(config = MapperBaseConfig.class)
 public interface AccountMapper {
   Account toDomain(AccountDocument document);
 
