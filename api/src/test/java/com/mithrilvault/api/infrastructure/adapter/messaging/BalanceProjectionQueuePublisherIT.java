@@ -9,10 +9,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.localstack.LocalStackContainer;
-import org.testcontainers.utility.DockerImageName;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -25,26 +22,8 @@ class BalanceProjectionQueuePublisherIT extends AbstractIntegrationTest {
 
   private static final String QUEUE_NAME = "mithril-vault-balance-projection";
 
-  private static final LocalStackContainer localstack =
-      new LocalStackContainer(DockerImageName.parse("localstack/localstack:3.7.0"))
-          .withServices(LocalStackContainer.Service.SQS);
-
-  static {
-    localstack.start();
-  }
-
   private static SqsClient rawSqsClient;
   private static String queueUrl;
-
-  @DynamicPropertySource
-  static void awsProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.cloud.aws.region.static", localstack::getRegion);
-    registry.add("spring.cloud.aws.credentials.access-key", localstack::getAccessKey);
-    registry.add("spring.cloud.aws.credentials.secret-key", localstack::getSecretKey);
-    registry.add(
-        "spring.cloud.aws.sqs.endpoint",
-        () -> localstack.getEndpointOverride(LocalStackContainer.Service.SQS).toString());
-  }
 
   @BeforeAll
   static void createQueue() {
