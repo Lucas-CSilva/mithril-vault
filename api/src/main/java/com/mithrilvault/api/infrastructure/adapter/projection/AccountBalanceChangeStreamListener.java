@@ -3,9 +3,9 @@ package com.mithrilvault.api.infrastructure.adapter.projection;
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 import com.mithrilvault.api.domain.config.AppProperties;
-import com.mithrilvault.api.infrastructure.adapter.messaging.BalanceProjectionMessage;
 import com.mithrilvault.api.infrastructure.adapter.messaging.BalanceProjectionQueuePublisher;
 import com.mithrilvault.api.infrastructure.adapter.persistence.ProjectionCheckpointRepositoryAdapter;
+import com.mithrilvault.api.infrastructure.mapper.ProjectionMessageMapper;
 import com.mithrilvault.api.infrastructure.persistence.document.TransactionDocument;
 import com.mongodb.MongoClientSettings;
 import io.micrometer.core.instrument.Counter;
@@ -41,12 +41,13 @@ public class AccountBalanceChangeStreamListener implements SmartLifecycle {
 
   private static final String PROJECTION_NAME = "accountBalance";
 
+  private final MeterRegistry meterRegistry;
   private final AppProperties appProperties;
   private final ProjectionLeaderElector leaderElector;
   private final ReactiveMongoTemplate reactiveMongoTemplate;
   private final BalanceProjectionQueuePublisher queuePublisher;
+  private final ProjectionMessageMapper projectionMessageMapper;
   private final ProjectionCheckpointRepositoryAdapter checkpointRepository;
-  private final MeterRegistry meterRegistry;
 
   private Disposable subscription;
   private String instanceId;
@@ -71,7 +72,8 @@ public class AccountBalanceChangeStreamListener implements SmartLifecycle {
     subscription =
         leaderElector
             .leadershipSignal(PROJECTION_NAME, instanceId, appProperties.leader().ttl())
-            .switchMap(isLeader -> isLeader ? changeStreamFlux() : Flux.empty())
+            .switchMap(
+                isLeader -> Boolean.TRUE.equals(isLeader) ? changeStreamFlux() : Flux.empty())
             .subscribe();
   }
 
@@ -115,7 +117,10 @@ public class AccountBalanceChangeStreamListener implements SmartLifecycle {
                     "Processing ChangeStreamEvent of Transaction: {} from user: {}",
                     transaction.getId(),
                     transaction.getOwnerId()))
-        .map(BalanceProjectionMessage::of)
+        .map(
+            transaction ->
+                projectionMessageMapper.toBalanceProjectionMessage(
+                    transaction, transaction.projectionTarget()))
         .flatMap(queuePublisher::publish)
         .retryWhen(
             Retry.backoff(
