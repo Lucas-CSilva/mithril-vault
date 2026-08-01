@@ -17,14 +17,16 @@ public class BalanceProjectionQueuePublisher {
 
   public Mono<Void> publish(BalanceProjectionMessage message) {
     log.info(
-        "Publishing BalanceProjection message for transaction: {} from user: {}",
+        "Publishing BalanceProjection message with id: {} for transaction: {} from user: {}",
+        message.id(),
         message.transactionId(),
         message.ownerId());
     return Mono.fromFuture(sqsTemplate.sendAsync(QUEUE_NAME, message))
         .doOnSuccess(
             result ->
                 log.info(
-                    "Published BalanceProjection message for transaction: {} from user: {}",
+                    "Published BalanceProjection message with id: {} for transaction: {} from user: {}",
+                    message.id(),
                     message.transactionId(),
                     message.ownerId()))
         .then();

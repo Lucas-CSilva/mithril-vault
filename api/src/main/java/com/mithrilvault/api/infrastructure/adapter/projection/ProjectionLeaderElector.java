@@ -26,7 +26,7 @@ public class ProjectionLeaderElector {
                 log.info(
                     "Instance {} {} leadership for projection {}",
                     instanceId,
-                    isLeader ? "acquired" : "lost",
+                    Boolean.TRUE.equals(isLeader) ? "acquired" : "lost",
                     projectionName))
         .startWith(false);
   }

@@ -1,6 +1,7 @@
 package com.mithrilvault.api.infrastructure.persistence.document;
 
 import com.mithrilvault.api.domain.model.*;
+import com.mithrilvault.api.infrastructure.adapter.messaging.ProjectionTarget;
 import java.time.LocalDate;
 import java.util.Set;
 import lombok.AllArgsConstructor;
@@ -42,4 +43,8 @@ public class TransactionDocument extends BaseDocument {
   private ImportSource importSource;
   private Boolean isReconciliation;
   private Set<String> appliedProjections;
+
+  public ProjectionTarget projectionTarget() {
+    return invoiceId != null ? ProjectionTarget.INVOICE : ProjectionTarget.ACCOUNT;
+  }
 }
