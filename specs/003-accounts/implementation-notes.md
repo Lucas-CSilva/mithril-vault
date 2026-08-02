@@ -234,6 +234,70 @@ Deferred-Scope decision (see the conversation's plan), only implement the
 `ADJUST_INITIAL_BALANCE` method for now; reject `ADJUSTING_TRANSACTION` with a 422
 (`BusinessException`) referencing that it's not yet supported.
 
+### 8.1 `ADJUSTING_TRANSACTION` — resolved design (was deferred, now specified)
+
+Previously this method had no concrete design beyond the 422 stub above. Resolved:
+
+**New factory on `Transaction`:**
+
+```java
+// Transaction.java
+public static Transaction reconciliation(
+    String ownerId, String accountId, TransactionType type, Long amount) {
+  return Transaction.builder()
+      .ownerId(ownerId)
+      .type(type)
+      .amount(amount)
+      .date(LocalDate.now())
+      .description("Reconciliação")
+      .accountId(accountId)
+      .isReconciliation(true)
+      .appliedProjections(Set.of())
+      .build();
+}
+```
+
+Mirrors `accountTransaction(...)`'s shape but has no `CreateTransactionCommand` to read from —
+the reconciliation flow is account-initiated, not a normal user-submitted transaction, so the
+factory takes its four scalar inputs directly instead of a command object.
+
+**Hexagonal wiring:** `ReconcileAccountCommandHandler` gains a `TransactionRepository` dependency
+directly — no new intermediary command/handler needed. This isn't a new pattern for this
+codebase: `CreateTransactionCommandHandler` already depends on `AccountReadRepository` for
+validation, so a handler in one feature's package depending on another feature's port is already
+established practice here, not a hexagonal-boundary violation.
+
+**Behavior:**
+
+```java
+// ReconcileAccountCommandHandler.applyReconciliation, ADJUSTING_TRANSACTION branch
+return accountReadRepository
+    .currentBalance(account.id(), account.ownerId(), account.initialBalance())
+    .map(currentBalance -> command.realBalance() - currentBalance)
+    .flatMap(delta -> transactionRepository.save(
+        Transaction.reconciliation(
+            account.ownerId(),
+            account.id(),
+            delta >= 0 ? TransactionType.CREDIT : TransactionType.DEBIT,
+            Math.abs(delta))))
+    .thenReturn(account); // unchanged — see below
+```
+
+The account itself is **not** saved in this branch (no `accountRepository.save(...)` call). The
+new transaction flows through the existing change-stream → SQS →
+`ApplyAccountBalanceProjectionCommandHandler` pipeline and updates `currentBalance` asynchronously,
+exactly like any other transaction — this is the "no separate handling needed" behavior
+`data-model.md`'s reconciliation section already promises. The handler returns the account as it
+was fetched at the start of `handle(...)`; the caller sees `currentBalance` catch up on the next
+read, same eventual-consistency contract as every other transaction-driven balance change in this
+feature.
+
+**Transactional guarantee:** none needed beyond what already exists. This is a single transaction
+insert — the same shape as `CreateTransactionCommandHandler`'s SINGLE-mode write — and the
+insert→`$inc` atomicity for updating `currentBalance` is already handled inside the projector's
+existing `TransactionalOperator` wrap (§11.6). No new multi-document transaction is required in
+`ReconcileAccountCommandHandler` itself.
+
 ## 9. Error responses — nothing new required
 
 Reuse the existing hierarchy as-is: `NotFoundException` → 404, `ConflictException` → 409,
