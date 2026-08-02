@@ -114,31 +114,47 @@ These must be in place before feature implementation begins.
 
 ### Feature 1.3 — Accounts
 
+Superseded by ADR-003 (see `docs/adr/ADR-003-materialized-derived-balances.md` and
+`specs/003-accounts/`): `currentBalance` is a **materialized, stored** field kept in sync by an
+async change-stream → SQS → projector pipeline, not a compute-on-read aggregation. The checklist
+below reflects what's actually implemented; see `specs/003-accounts/implementation-notes.md` §11
+for the full design and its own build-order checklist.
+
 #### Backend
-- [ ] `Account` domain model (Record: `id`, `ownerId`, `name`, `type`, `institution`, `initialBalance`, `color`, `isActive`, `createdAt`)
-- [ ] `AccountType` enum (`CHECKING`, `SAVINGS`, `CASH`, `DIGITAL`)
-- [ ] `AccountRepository` write port
-- [ ] `AccountReadRepository` read port (listByOwner, findByIdAndOwner, balance aggregation)
-- [ ] `CreateAccountCommand` + handler
-- [ ] `UpdateAccountCommand` + handler
-- [ ] `DeactivateAccountCommand` + handler (soft-delete: `isActive = false`)
-- [ ] `ReconcileAccountCommand` + handler (creates adjusting transaction or updates `initialBalance`)
-- [ ] `ListAccountsQuery` + handler (returns list with `currentBalance` projected via aggregation)
-- [ ] `AccountBalanceQuery` + handler (`initialBalance + SUM(CREDIT) - SUM(DEBIT)` aggregation pipeline)
-- [ ] `AccountDocument` + `AccountMongoRepository`
-- [ ] Balance aggregation pipeline (`$lookup` transactions, `$group`)
-- [ ] `AccountController` — `GET /accounts`, `POST /accounts`, `GET /accounts/{id}`, `PATCH /accounts/{id}`, `DELETE /accounts/{id}` (soft), `GET /accounts/{id}/balance-history` (last 30 days daily closing balance)
-- [ ] `AccountResponse` — include `currentBalance` (derived), omit `ownerId`
-- [ ] `AccountCommandHandlerTest` + `AccountBalanceAggregationIT` + tenancy isolation test
+- [x] `Account` domain model (Record: `id`, `ownerId`, `name`, `type`, `institution`,
+      `initialBalance`, `currentBalance`, `color`, `isActive`, `createdAt`, `version`)
+- [x] `AccountType` enum (`CHECKING`, `SAVINGS`, `CASH`, `DIGITAL`)
+- [x] `AccountRepository` write port
+- [x] `AccountReadRepository` read port (`currentBalance` aggregation kept for backfill/reconcile use, `balanceHistory`)
+- [x] `CreateAccountCommand` + handler (sets `currentBalance = initialBalance` at creation)
+- [x] `UpdateAccountCommand` + handler
+- [x] `DeactivateAccountCommand` / `ReactivateAccountCommand` + handlers (soft-delete: `isActive`)
+- [x] `ReconcileAccountCommand` + handler — `ADJUST_INITIAL_BALANCE` sets `initialBalance` and
+      `currentBalance` together; `ADJUSTING_TRANSACTION` rejected with 422 (deferred scope)
+- [x] `ListAccountsQuery` / `GetAccountQuery` + handlers (return the materialized `currentBalance`)
+- [x] `AccountDocument` (`currentBalance`, `@Version`) + `AccountMongoRepository`
+- [x] `AccountBalanceChangeStreamListener` — publishes balance-change events to SQS on transaction writes
+- [x] `ApplyAccountBalanceProjectionCommandHandler` (SQS consumer) — idempotent, transactional `$inc` of `currentBalance`
+- [x] `ProjectionRepository` / `ProjectionCheckpointDocument` — change-stream resume-token checkpointing
+- [x] `AccountController` — `GET /accounts`, `POST /accounts`, `GET /accounts/{id}`, `PATCH /accounts/{id}`,
+      `DELETE /accounts/{id}` (soft), `POST /accounts/{id}/reactivate`, `POST /accounts/{id}/reconcile`,
+      `GET /accounts/{id}/balance-history`
+- [x] `AccountResponse` — includes `currentBalance` (materialized), omits `ownerId`
+- [x] Unit tests per handler + `AccountIT`, `AccountRepositoryAdapterIT`, `AccountBalanceChangeStreamListenerIT`,
+      `ProjectionCheckpointRepositoryAdapterIT` + cross-tenant isolation test
+- [ ] `balance_snapshots` population (`BalanceSnapshotScheduler`) — schema exists, not built (explicitly deferred)
+- [ ] `BalanceReconciliationJob` — not built (explicitly deferred)
+- [ ] `ADJUSTING_TRANSACTION` reconciliation method — not built (explicitly deferred)
 
 #### Frontend
-- [ ] `features/accounts/types.ts` — `Account` (with `currentBalance: Centavos`)
-- [ ] `features/accounts/api.ts` + `keys.ts` + hooks (`useAccounts`, `useAccount`, `useCreateAccount`, `useUpdateAccount`, `useDeactivateAccount`)
-- [ ] `features/accounts/components/AccountList.tsx`
-- [ ] `features/accounts/components/AccountCard.tsx`
-- [ ] `features/accounts/components/CreateAccountForm.tsx`
-- [ ] `features/accounts/components/AccountDetail.tsx` (balance + transaction feed stub)
-- [ ] `app/(app)/accounts/page.tsx`
+- [x] `features/account/types.ts` — `Account` (with `currentBalance: Centavos`)
+- [x] `features/account/api.ts` + `keys.ts` + hooks (`useAccounts`, `useCreateAccount`, `useUpdateAccount`,
+      `useDeactivateAccount`, `useReactivateAccount`, `useReconcileAccount`, `useAccountBalanceHistory`)
+- [x] `features/account/components/AccountList.tsx`
+- [x] `features/account/components/AccountCard.tsx`
+- [x] `features/account/components/AccountForm.tsx` (create/update)
+- [x] `features/account/components/ReconcileAccountDialog.tsx`, `DeactivateAccountDialog.tsx`
+- [x] `app/(app)/accounts/page.tsx`
 
 ---
 
@@ -406,7 +422,7 @@ These must be in place before feature implementation begins.
 | `ownerId` from JWT only — never from request | `SecurityContext` → Reactor Context extraction |
 | Every read scoped to `ownerId` | Read ports + query handlers |
 | Not-owned resource → 404, not 403 | Command/query handlers |
-| No derived value stored | `currentBalance`, `totalAmount`, `spentAmount`, "Saldo Líquido" |
+| No derived value stored, **except** `currentBalance` (ADR-003: materialized via async projection) | `totalAmount`, `spentAmount`, "Saldo Líquido" |
 | Multi-doc operations transactional (P7) | Transfers, invoice payment, category delete |
 | Idempotent money commands | `transferPairId`, `importHash`, `FITID` |
 | Responses omit `ownerId`, `passwordHash`, `@Version` | All `*Response` records |

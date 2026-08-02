@@ -4,7 +4,10 @@ info:
   version: "1.0.0"
   description: |
     Account management. All accounts are tenant-scoped.
-    currentBalance is always derived (never stored) and included in every response.
+    currentBalance is a materialized (stored) field, kept in sync with the transactions
+    collection by an async balance projection (ADR-003) and included in every response. It is
+    eventually consistent: immediately after a transaction is created there may be a brief delay
+    before currentBalance reflects it.
 
 servers:
   - url: /mithril-vault
@@ -31,7 +34,7 @@ paths:
             default: false
       responses:
         "200":
-          description: Account list with derived currentBalance
+          description: Account list with materialized currentBalance
           content:
             application/json:
               schema:
@@ -181,8 +184,8 @@ paths:
       summary: Reconcile account balance
       description: |
         Accepts the user's real bank balance and the desired reconciliation method.
-        Method "ADJUSTING_TRANSACTION" creates a DEBIT or CREDIT labelled "Reconciliação".
-        Method "ADJUST_INITIAL_BALANCE" updates initialBalance directly.
+        Method "ADJUSTING_TRANSACTION" is not implemented yet — always rejected with 422.
+        Method "ADJUST_INITIAL_BALANCE" updates initialBalance and currentBalance together.
       operationId: reconcileAccount
       tags: [accounts]
       requestBody:
@@ -193,7 +196,7 @@ paths:
               $ref: "#/components/schemas/ReconcileAccountCommand"
       responses:
         "200":
-          description: Account reconciled; returns updated account with new currentBalance
+          description: Account reconciled; returns updated account with new initialBalance and currentBalance
           content:
             application/json:
               schema:
@@ -299,8 +302,9 @@ components:
           type: string
           enum: [ADJUSTING_TRANSACTION, ADJUST_INITIAL_BALANCE]
           description: |
-            ADJUSTING_TRANSACTION: creates a labelled DEBIT/CREDIT transaction to cover the discrepancy.
-            ADJUST_INITIAL_BALANCE: directly updates initialBalance so derived currentBalance matches.
+            ADJUSTING_TRANSACTION: intended to create a labelled DEBIT/CREDIT transaction to cover
+            the discrepancy. Not implemented — always rejected with 422 (deferred scope).
+            ADJUST_INITIAL_BALANCE: directly updates initialBalance and currentBalance together.
 
     AccountResponse:
       type: object
@@ -325,7 +329,9 @@ components:
         currentBalance:
           type: integer
           format: int64
-          description: Derived. Centavos. initialBalance + SUM(CREDIT) - SUM(DEBIT).
+          description: |
+            Materialized (stored). Centavos. Kept in sync with the transactions collection by an
+            async balance projection (ADR-003) — eventually consistent, not computed on read.
           example: 148500
         color:
           type: string

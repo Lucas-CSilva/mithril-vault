@@ -443,6 +443,12 @@ prod data) is enough — this isn't a repeatable migration, it runs exactly once
 
 ### 11.6 `AccountBalanceProjector` (`@SqsListener` consumer) — the atomicity gap, and closing it
 
+**Implemented as:** `ApplyAccountBalanceProjectionCommandHandler`, not a class literally named
+`AccountBalanceProjector`. It also goes through a `ProjectionRepository` port
+(`ProjectionCheckpointRepositoryAdapter` infra implementation) rather than calling
+`ReactiveMongoTemplate`/`TransactionalOperator` inline as sketched below — the sketch's behavior
+is what was built, just behind an extra port/adapter layer for the checkpoint state.
+
 ```java
 @SqsListener("mithril-vault-balance-projection")
 public Mono<Void> handle(BalanceProjectionMessage message) {
@@ -502,17 +508,24 @@ exact same mechanism, not learning a new one).
 
 ### 11.7 Read-path rewire
 
-`AccountReadRepository.currentBalance` (`AccountRepositoryAdapter`) becomes a plain field read
-instead of the §5 aggregation — the aggregation itself doesn't go away, it's kept, renamed
-`recomputeBalance`, and used only by the backfill (§11.5) and the future reconciliation job
-(§11.10), never by a request-serving read again.
+**Status: controller half done, port half still open.**
 
-Six call sites in `AccountController` currently pass `account.initialBalance()` as the
-`currentBalance` argument to `accountResponseMapper.toResponse(account, ...)` — `create`,
+Done: the six `AccountController` call sites that used to pass `account.initialBalance()` as the
+`currentBalance` argument now use the account's own materialized `currentBalance` — `create`,
 `update`, `reactivate`, `get`, `list`, `reconcile`. Every one of them was a placeholder (there was
-never a working aggregation wired into the controller before this). Switch all six to
-`account.currentBalance()` — this is also the fix for that pre-existing gap, not just the
-ADR-003 migration.
+never a working aggregation wired into the controller before this). The mapper itself was
+simplified to `accountResponseMapper.toResponse(account)` (single-arg, MapStruct maps
+`currentBalance` straight off the domain record) rather than taking an explicit second
+`currentBalance` parameter — cleaner than the original two-arg sketch above, since the domain
+model now always carries the field itself.
+
+Still open: `AccountReadRepository.currentBalance` (`AccountRepositoryAdapter`) is still the §5
+aggregation, not a plain field read. `ReconcileAccountCommandHandler` still calls it to compute
+the reconciliation delta (recomputing truth from `transactions` is actually the safer source for
+that specific use, so leaving it as an aggregation there isn't wrong) — but per the original plan
+here, this method was meant to become a plain field read once the projector is trustworthy, with
+the aggregation renamed `recomputeBalance` and reserved for the backfill (§11.5) and the future
+reconciliation job (§11.10). Neither the rename nor the backfill has been done yet.
 
 ### 11.8 `balance-history` — implement for real now that `transactions` exists
 
@@ -627,30 +640,42 @@ Docs: [Testcontainers — LocalStack module](https://testcontainers.com/modules/
 Ordered per §11.0's build order — each numbered group is a mergeable slice, not a grab-bag:
 
 **1. SQS plumbing (§11.3)**
-- [ ] `spring-cloud-aws-starter-sqs` dependency added
-- [ ] LocalStack `SERVICES` includes `sqs`; `02-seed-sqs.sh` provisions the queue + DLQ
-- [ ] Throwaway round-trip proven (send → receive), then removed
+- [x] `spring-cloud-aws-starter-sqs` dependency added
+- [x] LocalStack `SERVICES` includes `sqs`; `02-seed-sqs.sh` provisions the queue + DLQ
+- [x] Round-trip proven — `BalanceProjectionQueuePublisherIT`, `BalanceProjectionListenerIT`
 
 **2. Schema additions, no behavior change (§11.1–11.2)**
-- [ ] `Account.currentBalance` + `AccountDocument.currentBalance` fields
-- [ ] `Transaction.appliedProjections` + `TransactionDocument.appliedProjections` fields
-- [ ] `ProjectionCheckpointDocument` + `BalanceSnapshotDocument` (schema only, unused so far)
-- [ ] Full existing test suite still green
+- [x] `Account.currentBalance` + `AccountDocument.currentBalance` fields
+- [x] `Transaction.appliedProjections` + `TransactionDocument.appliedProjections` fields
+- [x] `ProjectionCheckpointDocument` + `BalanceSnapshotDocument` (schema only, unused so far)
+- [x] Full existing test suite still green
 
 **3. Trigger alone (§11.4)**
-- [ ] `AccountBalanceChangeStreamListener` — change stream trigger, publishes to SQS, checkpoints
-- [ ] Test: creating a transaction produces a queue message (balances not expected to move yet)
+- [x] `AccountBalanceChangeStreamListener` — change stream trigger, publishes to SQS, checkpoints
+- [x] Test: `AccountBalanceChangeStreamListenerIT` — publishes + advances checkpoint per inserted transaction, survives a failed event
 
 **4. Consumer (§11.6)**
-- [ ] `AccountBalanceProjector` (`@SqsListener`) — idempotency guard + `$inc`, wrapped in one Mongo transaction via the existing `TransactionalOperator`
-- [ ] Idempotency-guard test: same event applied twice, balance moves once
+- [x] Implemented as `ApplyAccountBalanceProjectionCommandHandler` (`@SqsListener`), not literally
+      named `AccountBalanceProjector` — idempotency guard + `$inc`, wrapped in one Mongo
+      transaction via the existing `TransactionalOperator`, behind a `ProjectionRepository` port
+- [x] Idempotency-guard test: `ApplyAccountBalanceProjectionCommandHandlerTest`
 
 **5. Turn it on for real (§11.5, §11.7, §11.9)**
-- [ ] One-time backfill run, listener started from "now" (not replayed from the beginning)
-- [ ] Read-path rewire — all six `AccountController` call sites switch to `account.currentBalance()`
-- [ ] `ReconcileAccountCommandHandler` sets `initialBalance` + `currentBalance` together via `Account.reconcileBalances`
-- [ ] `balance_snapshots` index added to `MongoIndexConfig` (§11.11)
-- [ ] Integration test: end-to-end eventual-consistency convergence (create transaction → poll until balance reflects it)
+- [ ] One-time backfill run, listener started from "now" (not replayed from the beginning) — not done
+- [x] Read-path rewire — all six `AccountController` call sites switch to `account.currentBalance()`
+      (fixed 2026-08-02; mapper simplified to single-arg `toResponse(account)`)
+- [x] `ReconcileAccountCommandHandler` sets `initialBalance` + `currentBalance` together via
+      `Account.reconcileBalances` (fixed 2026-08-02)
+- [ ] `AccountReadRepository.currentBalance` still the §5 aggregation, not yet a plain field read;
+      old aggregation not yet renamed `recomputeBalance` — see §11.7 status note
+- [ ] `balance_snapshots` index added to `MongoIndexConfig` (§11.11) — not done
+- [ ] Integration test: end-to-end eventual-consistency convergence (create transaction → poll until balance reflects it) — not done
+
+**6. `balance-history` (§11.8)**
+- [ ] Still the flat-line stub — not implemented for real yet
+
+**7. Deferred, not built this pass (§11.10)**
+- [ ] `BalanceSnapshotScheduler`, `BalanceReconciliationJob` — not built (by design, deferred)
 
 **6. `balance-history` (§11.8, independent — any time after slice 2)**
 - [ ] Implemented for real (no longer a flat-line stub)
