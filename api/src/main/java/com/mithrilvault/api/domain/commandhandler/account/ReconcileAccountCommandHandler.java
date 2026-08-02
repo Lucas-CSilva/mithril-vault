@@ -43,7 +43,8 @@ public class ReconcileAccountCommandHandler {
         .currentBalance(account.id(), account.ownerId(), account.initialBalance())
         .map(
             currentBalance ->
-                account.reconcileInitialBalance(
-                    account.initialBalance() + (command.realBalance() - currentBalance)));
+                account.reconcileBalances(
+                    account.initialBalance() + (command.realBalance() - currentBalance),
+                    command.realBalance()));
   }
 }

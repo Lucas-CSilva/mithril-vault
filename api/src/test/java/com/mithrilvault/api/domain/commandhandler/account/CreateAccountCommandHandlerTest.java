@@ -42,6 +42,8 @@ class CreateAccountCommandHandlerTest {
               assertThat(account.isActive()).isTrue();
               assertThat(account.initialBalance())
                   .isEqualTo(CreateAccountCommands.DEFAULT_INITIAL_BALANCE);
+              assertThat(account.currentBalance())
+                  .isEqualTo(CreateAccountCommands.DEFAULT_INITIAL_BALANCE);
             })
         .verifyComplete();
   }

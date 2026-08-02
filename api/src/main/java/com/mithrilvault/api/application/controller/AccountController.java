@@ -41,9 +41,7 @@ public class AccountController {
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<AccountResponse> create(
       @RequestBody @Valid CreateAccountCommand command, @CurrentOwnerId String ownerId) {
-    return createCommandHandler
-        .handle(ownerId, command)
-        .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
+    return createCommandHandler.handle(ownerId, command).map(accountResponseMapper::toResponse);
   }
 
   @PatchMapping(path = "/{id}")
@@ -51,9 +49,7 @@ public class AccountController {
       @PathVariable String id,
       @RequestBody @Valid UpdateAccountCommand command,
       @CurrentOwnerId String ownerId) {
-    return updateCommandHandler
-        .handle(id, ownerId, command)
-        .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
+    return updateCommandHandler.handle(id, ownerId, command).map(accountResponseMapper::toResponse);
   }
 
   @DeleteMapping(path = "/{id}")
@@ -64,25 +60,19 @@ public class AccountController {
 
   @PostMapping(path = "/{id}/reactivate")
   public Mono<AccountResponse> reactivate(@PathVariable String id, @CurrentOwnerId String ownerId) {
-    return reactivateCommandHandler
-        .handle(id, ownerId)
-        .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
+    return reactivateCommandHandler.handle(id, ownerId).map(accountResponseMapper::toResponse);
   }
 
   @GetMapping(path = "/{id}")
   public Mono<AccountResponse> get(@PathVariable String id, @CurrentOwnerId String ownerId) {
-    return getQueryHandler
-        .handle(id, ownerId)
-        .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
+    return getQueryHandler.handle(id, ownerId).map(accountResponseMapper::toResponse);
   }
 
   @GetMapping
   public Flux<AccountResponse> list(
       @RequestParam(defaultValue = "false") boolean includeInactive,
       @CurrentOwnerId String ownerId) {
-    return listQueryHandler
-        .handle(ownerId, includeInactive)
-        .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
+    return listQueryHandler.handle(ownerId, includeInactive).map(accountResponseMapper::toResponse);
   }
 
   @PostMapping(path = "/{id}/reconcile")
@@ -92,7 +82,7 @@ public class AccountController {
       @CurrentOwnerId String ownerId) {
     return reconcileCommandHandler
         .handle(id, ownerId, command)
-        .map(account -> accountResponseMapper.toResponse(account, account.initialBalance()));
+        .map(accountResponseMapper::toResponse);
   }
 
   @GetMapping(path = "/{id}/balance-history")

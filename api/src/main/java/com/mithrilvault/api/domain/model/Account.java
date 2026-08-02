@@ -27,6 +27,7 @@ public record Account(
         .type(command.type())
         .institution(command.institution())
         .initialBalance(command.initialBalance())
+        .currentBalance(command.initialBalance())
         .color(command.color())
         .isActive(Boolean.TRUE)
         .build();
@@ -51,7 +52,10 @@ public record Account(
     return this.toBuilder().isActive(Boolean.TRUE).build();
   }
 
-  public Account reconcileInitialBalance(Long newInitialBalance) {
-    return this.toBuilder().initialBalance(newInitialBalance).build();
+  public Account reconcileBalances(Long newInitialBalance, Long newCurrentBalance) {
+    return this.toBuilder()
+        .initialBalance(newInitialBalance)
+        .currentBalance(newCurrentBalance)
+        .build();
   }
 }

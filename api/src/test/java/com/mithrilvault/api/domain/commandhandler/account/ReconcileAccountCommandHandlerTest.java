@@ -50,9 +50,12 @@ class ReconcileAccountCommandHandlerTest {
                 Accounts.DEFAULT_OWNER_ID,
                 ReconcileAccountCommands.adjustInitialBalance()))
         .assertNext(
-            account ->
-                assertThat(account.initialBalance())
-                    .isEqualTo(ReconcileAccountCommands.DEFAULT_REAL_BALANCE))
+            account -> {
+              assertThat(account.initialBalance())
+                  .isEqualTo(ReconcileAccountCommands.DEFAULT_REAL_BALANCE);
+              assertThat(account.currentBalance())
+                  .isEqualTo(ReconcileAccountCommands.DEFAULT_REAL_BALANCE);
+            })
         .verifyComplete();
   }
 
@@ -73,11 +76,14 @@ class ReconcileAccountCommandHandlerTest {
                 Accounts.DEFAULT_OWNER_ID,
                 ReconcileAccountCommands.adjustInitialBalance()))
         .assertNext(
-            account ->
-                assertThat(account.initialBalance())
-                    .isEqualTo(
-                        existing.initialBalance()
-                            + (ReconcileAccountCommands.DEFAULT_REAL_BALANCE - currentBalance)))
+            account -> {
+              assertThat(account.initialBalance())
+                  .isEqualTo(
+                      existing.initialBalance()
+                          + (ReconcileAccountCommands.DEFAULT_REAL_BALANCE - currentBalance));
+              assertThat(account.currentBalance())
+                  .isEqualTo(ReconcileAccountCommands.DEFAULT_REAL_BALANCE);
+            })
         .verifyComplete();
   }
 
