@@ -53,7 +53,7 @@ class BalanceProjectionListenerTest {
     when(projectionMessageMapper.toAccountBalance(message)).thenReturn(command);
     when(applyAccountBalanceProjection.handle(command)).thenReturn(Mono.empty());
 
-    StepVerifier.create(listener.handle(message)).verifyComplete();
+    StepVerifier.create(Mono.fromFuture(listener.handle(message))).verifyComplete();
 
     verify(applyAccountBalanceProjection).handle(command);
   }
@@ -62,7 +62,7 @@ class BalanceProjectionListenerTest {
   void doesNothing_forInvoiceTargetMessages() {
     var message = message(ProjectionTarget.INVOICE);
 
-    StepVerifier.create(listener.handle(message)).verifyComplete();
+    StepVerifier.create(Mono.fromFuture(listener.handle(message))).verifyComplete();
 
     verify(applyAccountBalanceProjection, never()).handle(any());
   }

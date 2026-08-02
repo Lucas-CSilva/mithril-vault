@@ -16,6 +16,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 /**
@@ -88,7 +89,7 @@ class BalanceProjectionListenerIT extends AbstractIntegrationTest {
             .target(ProjectionTarget.ACCOUNT)
             .build();
 
-    StepVerifier.create(listener.handle(message)).verifyComplete();
+    StepVerifier.create(Mono.fromFuture(listener.handle(message))).verifyComplete();
 
     AccountDocument reloadedAccount = accountMongoRepository.findById(account.getId()).block();
     assertThat(reloadedAccount.getCurrentBalance()).isEqualTo(1_500L);
@@ -115,8 +116,8 @@ class BalanceProjectionListenerIT extends AbstractIntegrationTest {
             .build();
 
     // Simulates SQS at-least-once redelivery: the exact same message is handled twice.
-    StepVerifier.create(listener.handle(message)).verifyComplete();
-    StepVerifier.create(listener.handle(message)).verifyComplete();
+    StepVerifier.create(Mono.fromFuture(listener.handle(message))).verifyComplete();
+    StepVerifier.create(Mono.fromFuture(listener.handle(message))).verifyComplete();
 
     AccountDocument reloadedAccount = accountMongoRepository.findById(account.getId()).block();
     assertThat(reloadedAccount.getCurrentBalance()).isEqualTo(1_500L);
@@ -135,6 +136,6 @@ class BalanceProjectionListenerIT extends AbstractIntegrationTest {
             .target(ProjectionTarget.INVOICE)
             .build();
 
-    StepVerifier.create(listener.handle(message)).verifyComplete();
+    StepVerifier.create(Mono.fromFuture(listener.handle(message))).verifyComplete();
   }
 }
