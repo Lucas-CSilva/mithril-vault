@@ -19,6 +19,7 @@ public final class Accounts {
         .type(AccountType.DIGITAL)
         .institution("Nubank")
         .initialBalance(150090L)
+        .currentBalance(150090L)
         .color("#88C0D0")
         .isActive(true)
         .createdAt(Instant.parse("2026-01-01T00:00:00Z"))

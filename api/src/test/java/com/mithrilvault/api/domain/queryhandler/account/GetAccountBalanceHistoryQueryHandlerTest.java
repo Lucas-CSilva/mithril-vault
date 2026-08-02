@@ -35,11 +35,11 @@ class GetAccountBalanceHistoryQueryHandlerTest {
   @Test
   void returnsPointsFromReadRepositoryForOwnedAccount() {
     Account account = Accounts.checking();
-    BalancePoint point = new BalancePoint(LocalDate.now(), account.initialBalance());
+    BalancePoint point = new BalancePoint(LocalDate.now(), account.currentBalance());
     when(accountRepository.findByIdAndOwnerId(account.id(), Accounts.DEFAULT_OWNER_ID))
         .thenReturn(Mono.just(account));
     when(accountReadRepository.balanceHistory(
-            account.id(), Accounts.DEFAULT_OWNER_ID, account.initialBalance(), 30))
+            account.id(), Accounts.DEFAULT_OWNER_ID, account.currentBalance(), 30))
         .thenReturn(Flux.just(point));
 
     StepVerifier.create(handler.handle(account.id(), Accounts.DEFAULT_OWNER_ID))

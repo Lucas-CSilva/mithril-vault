@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 import com.mithrilvault.api.domain.exception.BusinessException;
 import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.model.Account;
-import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
 import com.mithrilvault.api.fixture.command.account.ReconcileAccountCommands;
 import com.mithrilvault.api.fixture.model.Accounts;
@@ -25,13 +24,12 @@ import reactor.test.StepVerifier;
 class ReconcileAccountCommandHandlerTest {
 
   @Mock private AccountRepository accountRepository;
-  @Mock private AccountReadRepository accountReadRepository;
 
   private ReconcileAccountCommandHandler handler;
 
   @BeforeEach
   void setUp() {
-    handler = new ReconcileAccountCommandHandler(accountRepository, accountReadRepository);
+    handler = new ReconcileAccountCommandHandler(accountRepository);
   }
 
   @Test
@@ -39,9 +37,6 @@ class ReconcileAccountCommandHandlerTest {
     Account existing = Accounts.checking();
     when(accountRepository.findByIdAndOwnerId(existing.id(), Accounts.DEFAULT_OWNER_ID))
         .thenReturn(Mono.just(existing));
-    when(accountReadRepository.currentBalance(
-            existing.id(), existing.ownerId(), existing.initialBalance()))
-        .thenReturn(Mono.just(existing.initialBalance()));
     when(accountRepository.save(any())).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
     StepVerifier.create(
@@ -61,13 +56,10 @@ class ReconcileAccountCommandHandlerTest {
 
   @Test
   void adjustInitialBalance_accountsForExistingDiscrepancyBetweenInitialAndCurrentBalance() {
-    Account existing = Accounts.checking();
-    long currentBalance = existing.initialBalance() + 5_000L;
+    long currentBalance = Accounts.checking().initialBalance() + 5_000L;
+    Account existing = Accounts.checking().toBuilder().currentBalance(currentBalance).build();
     when(accountRepository.findByIdAndOwnerId(existing.id(), Accounts.DEFAULT_OWNER_ID))
         .thenReturn(Mono.just(existing));
-    when(accountReadRepository.currentBalance(
-            existing.id(), existing.ownerId(), existing.initialBalance()))
-        .thenReturn(Mono.just(currentBalance));
     when(accountRepository.save(any())).thenAnswer(inv -> Mono.just(inv.getArgument(0)));
 
     StepVerifier.create(

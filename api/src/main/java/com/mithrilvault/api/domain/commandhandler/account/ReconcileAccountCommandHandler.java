@@ -6,7 +6,6 @@ import com.mithrilvault.api.domain.exception.ErrorCode;
 import com.mithrilvault.api.domain.exception.NotFoundException;
 import com.mithrilvault.api.domain.model.Account;
 import com.mithrilvault.api.domain.model.ReconciliationMethod;
-import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,6 @@ import reactor.core.publisher.Mono;
 public class ReconcileAccountCommandHandler {
 
   private final AccountRepository accountRepository;
-  private final AccountReadRepository accountReadRepository;
 
   public Mono<Account> handle(String id, String ownerId, ReconcileAccountCommand command) {
     log.info("Reconciling account id={} ownerId={} method={}", id, ownerId, command.method());
@@ -38,13 +36,11 @@ public class ReconcileAccountCommandHandler {
               ErrorCode.VALIDATION_FAILED,
               "Reconciliation via ADJUSTING_TRANSACTION is not supported yet"));
     }
+    Account reconciled =
+        account.reconcileBalances(
+            account.initialBalance() + (command.realBalance() - account.currentBalance()),
+            command.realBalance());
 
-    return accountReadRepository
-        .currentBalance(account.id(), account.ownerId(), account.initialBalance())
-        .map(
-            currentBalance ->
-                account.reconcileBalances(
-                    account.initialBalance() + (command.realBalance() - currentBalance),
-                    command.realBalance()));
+    return Mono.just(reconciled);
   }
 }

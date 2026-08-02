@@ -7,14 +7,16 @@ import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
 import com.mithrilvault.api.infrastructure.mapper.AccountMapper;
 import com.mithrilvault.api.infrastructure.persistence.AccountMongoRepository;
+import com.mithrilvault.api.infrastructure.persistence.document.TransactionDocument;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -22,8 +24,6 @@ import reactor.core.publisher.Mono;
 @Repository
 @RequiredArgsConstructor
 public class AccountRepositoryAdapter implements AccountRepository, AccountReadRepository {
-
-  private static final String TRANSACTIONS_COLLECTION = "transactions";
 
   private final AccountMapper accountMapper;
   private final AccountMongoRepository accountRepository;
@@ -55,33 +55,42 @@ public class AccountRepositoryAdapter implements AccountRepository, AccountReadR
   }
 
   @Override
-  public Mono<Long> currentBalance(String accountId, String ownerId, Long initialBalance) {
-    Aggregation aggregation =
-        Aggregation.newAggregation(
-            Aggregation.match(Criteria.where("ownerId").is(ownerId).and("accountId").is(accountId)),
-            Aggregation.group("type").sum("amount").as("total"));
+  public Flux<BalancePoint> balanceHistory(
+      String accountId, String ownerId, Long currentBalance, int days) {
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    LocalDate windowStart = today.minusDays(days - 1L);
+
+    // TODO(ADR-003): bound this via balance_snapshots once the reconciliation job exists —
+    // an unbounded scan over up to `days` worth of transactions, acceptable at this data volume.
+    Query query =
+        Query.query(
+            Criteria.where(TransactionDocument.Fields.ownerId)
+                .is(ownerId)
+                .and(TransactionDocument.Fields.accountId)
+                .is(accountId)
+                .and(TransactionDocument.Fields.date)
+                .gte(windowStart)
+                .lte(today));
 
     return reactiveMongoTemplate
-        .aggregate(aggregation, TRANSACTIONS_COLLECTION, TransactionTypeTotal.class)
-        .collectList()
-        .map(
-            totals ->
-                initialBalance
-                    + totals.stream()
-                        .mapToLong(
-                            total -> "CREDIT".equals(total.id()) ? total.total() : -total.total())
-                        .sum());
+        .find(query, TransactionDocument.class)
+        .collect(
+            Collectors.groupingBy(
+                TransactionDocument::getDate,
+                Collectors.summingLong(txn -> txn.getType().signedAmount(txn.getAmount()))))
+        .flatMapMany(
+            netChangeByDate -> {
+              long windowNetChange =
+                  netChangeByDate.values().stream().mapToLong(Long::longValue).sum();
+              long seed = currentBalance - windowNetChange;
+              return Flux.range(0, days)
+                  .map(windowStart::plusDays)
+                  .scan(
+                      new BalancePoint(windowStart.minusDays(1), seed),
+                      (previous, date) ->
+                          new BalancePoint(
+                              date, previous.balance() + netChangeByDate.getOrDefault(date, 0L)))
+                  .skip(1);
+            });
   }
-
-  @Override
-  public Flux<BalancePoint> balanceHistory(
-      String accountId, String ownerId, Long initialBalance, int days) {
-    // The transactions collection (feature 004) doesn't exist yet, so every day's closing
-    // balance is the account's initialBalance until real transactions can be aggregated.
-    LocalDate today = LocalDate.now(ZoneOffset.UTC);
-    return Flux.range(0, days)
-        .map(offset -> new BalancePoint(today.minusDays(days - 1L - offset), initialBalance));
-  }
-
-  private record TransactionTypeTotal(String id, Long total) {}
 }

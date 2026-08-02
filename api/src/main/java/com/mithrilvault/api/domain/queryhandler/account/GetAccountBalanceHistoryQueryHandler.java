@@ -28,6 +28,6 @@ public class GetAccountBalanceHistoryQueryHandler {
         .flatMapMany(
             account ->
                 accountReadRepository.balanceHistory(
-                    accountId, ownerId, account.initialBalance(), HISTORY_DAYS));
+                    accountId, ownerId, account.currentBalance(), HISTORY_DAYS));
   }
 }

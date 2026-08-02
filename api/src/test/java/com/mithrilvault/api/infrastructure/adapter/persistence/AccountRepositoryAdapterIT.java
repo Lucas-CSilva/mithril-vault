@@ -6,11 +6,14 @@ import com.mithrilvault.api.config.AbstractIntegrationTest;
 import com.mithrilvault.api.domain.exception.ConflictException;
 import com.mithrilvault.api.domain.model.Account;
 import com.mithrilvault.api.domain.model.BalancePoint;
+import com.mithrilvault.api.domain.model.TransactionType;
 import com.mithrilvault.api.fixture.model.Accounts;
 import com.mithrilvault.api.infrastructure.persistence.AccountMongoRepository;
 import com.mithrilvault.api.infrastructure.persistence.document.AccountDocument;
+import com.mithrilvault.api.infrastructure.persistence.document.TransactionDocument;
 import java.time.Instant;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -141,55 +144,10 @@ class AccountRepositoryAdapterIT extends AbstractIntegrationTest {
         .verifyComplete();
   }
 
-  // ── currentBalance ────────────────────────────────────────────────────
-
-  @Test
-  void currentBalance_equalsInitialBalance_whenNoTransactionsExist() {
-    StepVerifier.create(adapter.currentBalance("account-1", Accounts.DEFAULT_OWNER_ID, 150000L))
-        .assertNext(balance -> assertThat(balance).isEqualTo(150000L))
-        .verifyComplete();
-  }
-
-  @Test
-  void currentBalance_addsCreditsAndSubtractsDebits() {
-    reactiveMongoTemplate
-        .save(
-            new Document(
-                Map.of(
-                    "ownerId",
-                    Accounts.DEFAULT_OWNER_ID,
-                    "accountId",
-                    "account-1",
-                    "type",
-                    "CREDIT",
-                    "amount",
-                    5_000L)),
-            "transactions")
-        .block();
-    reactiveMongoTemplate
-        .save(
-            new Document(
-                Map.of(
-                    "ownerId",
-                    Accounts.DEFAULT_OWNER_ID,
-                    "accountId",
-                    "account-1",
-                    "type",
-                    "DEBIT",
-                    "amount",
-                    2_000L)),
-            "transactions")
-        .block();
-
-    StepVerifier.create(adapter.currentBalance("account-1", Accounts.DEFAULT_OWNER_ID, 100_000L))
-        .assertNext(balance -> assertThat(balance).isEqualTo(103_000L))
-        .verifyComplete();
-  }
-
   // ── balanceHistory ────────────────────────────────────────────────────
 
   @Test
-  void balanceHistory_returnsThirtyAscendingDailyPoints() {
+  void balanceHistory_returnsThirtyAscendingDailyPoints_whenNoTransactionsExist() {
     StepVerifier.create(
             adapter
                 .balanceHistory("account-1", Accounts.DEFAULT_OWNER_ID, 150000L, 30)
@@ -202,5 +160,51 @@ class AccountRepositoryAdapterIT extends AbstractIntegrationTest {
                   .isSortedAccordingTo(java.util.Comparator.comparing(BalancePoint::date));
             })
         .verifyComplete();
+  }
+
+  @Test
+  void balanceHistory_appliesNetChangePerDay_andCarriesForwardOnDaysWithoutTransactions() {
+    LocalDate today = LocalDate.now(ZoneOffset.UTC);
+    LocalDate threeDaysAgo = today.minusDays(3);
+    LocalDate twoDaysAgo = today.minusDays(2);
+
+    reactiveMongoTemplate
+        .save(transaction("account-1", threeDaysAgo, TransactionType.CREDIT, 5_000L))
+        .block();
+    reactiveMongoTemplate
+        .save(transaction("account-1", twoDaysAgo, TransactionType.DEBIT, 2_000L))
+        .block();
+
+    StepVerifier.create(
+            adapter
+                .balanceHistory("account-1", Accounts.DEFAULT_OWNER_ID, 103_000L, 30)
+                .collectList())
+        .assertNext(
+            points -> {
+              assertThat(points).hasSize(30);
+              assertThat(pointOn(points, threeDaysAgo.minusDays(1)).balance()).isEqualTo(100_000L);
+              assertThat(pointOn(points, threeDaysAgo).balance()).isEqualTo(105_000L);
+              assertThat(pointOn(points, twoDaysAgo).balance()).isEqualTo(103_000L);
+              assertThat(pointOn(points, today).balance()).isEqualTo(103_000L);
+            })
+        .verifyComplete();
+  }
+
+  private static BalancePoint pointOn(java.util.List<BalancePoint> points, LocalDate date) {
+    return points.stream()
+        .filter(point -> point.date().equals(date))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No balance point for " + date));
+  }
+
+  private static TransactionDocument transaction(
+      String accountId, LocalDate date, TransactionType type, Long amount) {
+    return TransactionDocument.builder()
+        .ownerId(Accounts.DEFAULT_OWNER_ID)
+        .accountId(accountId)
+        .type(type)
+        .amount(amount)
+        .date(date)
+        .build();
   }
 }
