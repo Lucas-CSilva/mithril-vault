@@ -365,10 +365,11 @@ change that only compiles at the very end:
    first time. Write the idempotency-guard test here — it's the single most valuable test in this
    whole section, and the easiest to write in isolation (bypass the queue, call the listener
    method directly twice, assert the balance moved once).
-5. **Turn it on for real (§11.5's backfill half + §11.7 + §11.9).** Run the one-time backfill,
-   then flip the six `AccountController` call sites and fix `ReconcileAccountCommandHandler` in
-   the same slice, since they're small and tightly related — this is the slice where
-   `currentBalance` becomes real for every account for the first time.
+5. **Turn it on for real (§11.5's backfill half + §11.7 + §11.9).** Run the one-time backfill —
+   or skip it if the environment has no pre-existing data (see §11.5's note) — then flip the six
+   `AccountController` call sites and fix `ReconcileAccountCommandHandler` in the same slice,
+   since they're small and tightly related — this is the slice where `currentBalance` becomes
+   real for every account for the first time.
 6. **`balance-history` (§11.8)** — independent of everything above (it never reads
    `currentBalance`), so it's fine to do it any time after step 2, whenever's convenient. Not a
    blocking dependency of steps 3–5 or vice versa.
@@ -504,6 +505,14 @@ existed before backfill ran:
 
 A simple `ApplicationRunner` gated by a one-off property (or a manual script run once against
 prod data) is enough — this isn't a repeatable migration, it runs exactly once per environment.
+
+**No-op on a fresh environment:** this step only matters if `accounts`/`transactions` already
+have data before the listener starts — there's nothing to backfill against an empty database.
+Wiping the local Mongo volume and starting clean (accounts created after this point already get
+`currentBalance = initialBalance` per §11.1, and the listener starts "from now" with no history
+to double-count) makes this step a no-op; skip the runner/script entirely in that case. Only
+build it when there's real pre-existing data to reconcile — a populated staging/prod environment,
+not local dev.
 
 ### 11.6 `AccountBalanceProjector` (`@SqsListener` consumer) — the atomicity gap, and closing it
 
