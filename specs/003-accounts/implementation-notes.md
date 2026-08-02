@@ -732,26 +732,40 @@ Ordered per §11.0's build order — each numbered group is a mergeable slice, n
       named `AccountBalanceProjector` — idempotency guard + `$inc`, wrapped in one Mongo
       transaction via the existing `TransactionalOperator`, behind a `ProjectionRepository` port
 - [x] Idempotency-guard test: `ApplyAccountBalanceProjectionCommandHandlerTest`
+- [x] **Bug fixed 2026-08-02:** the `@SqsListener` method (`BalanceProjectionListener.handle`) was
+      returning `Mono<Void>`. Spring Cloud AWS SQS 4.0.0-RC1 has no Reactor support — its listener
+      adapter casts the return value directly to `CompletableFuture<Void>`, so the `Mono` was never
+      subscribed to and the projection silently never ran, even though the message still
+      acknowledged as if it had. Changed the method to return `CompletableFuture<Void>` (via
+      `.toFuture()`) instead. This was only caught by adding a real end-to-end test through the
+      actual `@SqsListener` container (see slice 5's new integration test below) — every prior test
+      either mocked the queue publisher or called `listener.handle(...)` directly, bypassing the
+      real container's return-type handling entirely.
 
 **5. Turn it on for real (§11.5, §11.7, §11.9)**
 - [ ] One-time backfill run, listener started from "now" (not replayed from the beginning) — not done
 - [x] Read-path rewire — all six `AccountController` call sites switch to `account.currentBalance()`
       (fixed 2026-08-02; mapper simplified to single-arg `toResponse(account)`)
 - [x] `ReconcileAccountCommandHandler` sets `initialBalance` + `currentBalance` together via
-      `Account.reconcileBalances` (fixed 2026-08-02)
-- [ ] `AccountReadRepository.currentBalance` still the §5 aggregation, not yet a plain field read;
-      old aggregation not yet renamed `recomputeBalance` — see §11.7 status note
-- [ ] `balance_snapshots` index added to `MongoIndexConfig` (§11.11) — not done
-- [ ] Integration test: end-to-end eventual-consistency convergence (create transaction → poll until balance reflects it) — not done
+      `Account.reconcileBalances` (fixed 2026-08-02; a follow-up bug where the reconciled result
+      was computed but discarded — the handler returned the original, unreconciled account — was
+      also fixed 2026-08-02)
+- [x] `AccountReadRepository.currentBalance` — resolved by removal rather than rename: nothing
+      calls it anymore (every read path now uses the account's own materialized `currentBalance`
+      field, including `ReconcileAccountCommandHandler`), so there's no aggregation left to rename
+      to `recomputeBalance` (fixed 2026-08-02)
+- [x] `balance_snapshots` index added to `MongoIndexConfig` (§11.11) — done
+- [x] Integration test: end-to-end eventual-consistency convergence — `AccountBalanceEventualConsistencyIT`
+      (fixed 2026-08-02), creates a transaction via the real HTTP API and polls `GET /accounts/{id}`
+      until `currentBalance` reflects it, through the real change-stream → SQS → `@SqsListener`
+      pipeline (LocalStack, no mocks). This is what caught the `Mono`/`CompletableFuture` bug above.
 
 **6. `balance-history` (§11.8)**
-- [ ] Still the flat-line stub — not implemented for real yet
+- [x] Implemented for real (fixed 2026-08-02): `$match`-equivalent query over `transactions` for the
+      account + 30-day window, grouped by day in Java, seeded from `currentBalance -
+      netChangeOverWindow` and run forward via `Flux.scan`. Left as
+      `// TODO(ADR-003): bound this via balance_snapshots once the reconciliation job exists` per
+      the note below — still an unbounded scan over the window, acceptable at this data volume.
 
 **7. Deferred, not built this pass (§11.10)**
 - [ ] `BalanceSnapshotScheduler`, `BalanceReconciliationJob` — not built (by design, deferred)
-
-**6. `balance-history` (§11.8, independent — any time after slice 2)**
-- [ ] Implemented for real (no longer a flat-line stub)
-
-**7. Deferred, not built this pass (§11.10)**
-- [ ] Left as `// TODO(ADR-003)`: `BalanceSnapshotScheduler`, `BalanceReconciliationJob`
