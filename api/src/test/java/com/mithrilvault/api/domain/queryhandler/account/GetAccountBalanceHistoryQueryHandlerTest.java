@@ -38,8 +38,7 @@ class GetAccountBalanceHistoryQueryHandlerTest {
     BalancePoint point = new BalancePoint(LocalDate.now(), account.currentBalance());
     when(accountRepository.findByIdAndOwnerId(account.id(), Accounts.DEFAULT_OWNER_ID))
         .thenReturn(Mono.just(account));
-    when(accountReadRepository.balanceHistory(
-            account.id(), Accounts.DEFAULT_OWNER_ID, account.currentBalance(), 30))
+    when(accountReadRepository.balanceHistory(account.id(), Accounts.DEFAULT_OWNER_ID, 30))
         .thenReturn(Flux.just(point));
 
     StepVerifier.create(handler.handle(account.id(), Accounts.DEFAULT_OWNER_ID))

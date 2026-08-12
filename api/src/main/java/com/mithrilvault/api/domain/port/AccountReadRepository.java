@@ -7,8 +7,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface AccountReadRepository {
-  Flux<BalancePoint> balanceHistory(
-      String accountId, String ownerId, Long currentBalance, int days);
+  Flux<BalancePoint> balanceHistory(String accountId, String ownerId, int days);
 
   Mono<TransactionAggregate> computeSnapshot(String accountId, String ownerId);
 

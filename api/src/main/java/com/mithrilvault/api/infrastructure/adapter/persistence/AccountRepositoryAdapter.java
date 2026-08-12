@@ -66,30 +66,32 @@ public class AccountRepositoryAdapter implements AccountRepository, AccountReadR
   }
 
   @Override
-  public Flux<BalancePoint> balanceHistory(
-      String accountId, String ownerId, Long currentBalance, int days) {
+  public Flux<BalancePoint> balanceHistory(String accountId, String ownerId, int days) {
     LocalDate today = LocalDate.now(ZoneOffset.UTC);
     LocalDate windowStart = today.minusDays(days - 1L);
 
-    // TODO(ADR-003): bound this via balance_snapshots once the reconciliation job exists —
-    // an unbounded scan over up to `days` worth of transactions, acceptable at this data volume.
-    return transactionRepository
-        .netAmountByDate(accountId, ownerId, windowStart, today)
-        .collectMap(DailyNetAmount::date, DailyNetAmount::netAmount)
+    return recomputeBalance(accountId, ownerId)
         .flatMapMany(
-            netChangeByDate -> {
-              long windowNetChange =
-                  netChangeByDate.values().stream().mapToLong(Long::longValue).sum();
-              long seed = currentBalance - windowNetChange;
-              return Flux.range(0, days)
-                  .map(windowStart::plusDays)
-                  .scan(
-                      new BalancePoint(windowStart.minusDays(1), seed),
-                      (previous, date) ->
-                          new BalancePoint(
-                              date, previous.balance() + netChangeByDate.getOrDefault(date, 0L)))
-                  .skip(1);
-            });
+            groundTruthBalance ->
+                transactionRepository
+                    .netAmountByDate(accountId, ownerId, windowStart, today)
+                    .collectMap(DailyNetAmount::date, DailyNetAmount::netAmount)
+                    .flatMapMany(
+                        netChangeByDate -> {
+                          long windowNetChange =
+                              netChangeByDate.values().stream().mapToLong(Long::longValue).sum();
+                          long seed = groundTruthBalance - windowNetChange;
+                          return Flux.range(0, days)
+                              .map(windowStart::plusDays)
+                              .scan(
+                                  new BalancePoint(windowStart.minusDays(1), seed),
+                                  (previous, date) ->
+                                      new BalancePoint(
+                                          date,
+                                          previous.balance()
+                                              + netChangeByDate.getOrDefault(date, 0L)))
+                              .skip(1);
+                        }));
   }
 
   @Override

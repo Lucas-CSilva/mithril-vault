@@ -25,9 +25,6 @@ public class GetAccountBalanceHistoryQueryHandler {
     return accountRepository
         .findByIdAndOwnerId(accountId, ownerId)
         .switchIfEmpty(Mono.error(new NotFoundException("Account not found")))
-        .flatMapMany(
-            account ->
-                accountReadRepository.balanceHistory(
-                    accountId, ownerId, account.currentBalance(), HISTORY_DAYS));
+        .thenMany(accountReadRepository.balanceHistory(accountId, ownerId, HISTORY_DAYS));
   }
 }

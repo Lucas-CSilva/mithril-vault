@@ -148,10 +148,18 @@ class AccountRepositoryAdapterIT extends AbstractIntegrationTest {
 
   @Test
   void balanceHistory_returnsThirtyAscendingDailyPoints_whenNoTransactionsExist() {
+    accountMongoRepository
+        .save(
+            AccountDocument.builder()
+                .id("account-1")
+                .ownerId(Accounts.DEFAULT_OWNER_ID)
+                .initialBalance(150000L)
+                .isActive(true)
+                .build())
+        .block();
+
     StepVerifier.create(
-            adapter
-                .balanceHistory("account-1", Accounts.DEFAULT_OWNER_ID, 150000L, 30)
-                .collectList())
+            adapter.balanceHistory("account-1", Accounts.DEFAULT_OWNER_ID, 30).collectList())
         .assertNext(
             points -> {
               assertThat(points).hasSize(30);
@@ -168,6 +176,15 @@ class AccountRepositoryAdapterIT extends AbstractIntegrationTest {
     LocalDate threeDaysAgo = today.minusDays(3);
     LocalDate twoDaysAgo = today.minusDays(2);
 
+    accountMongoRepository
+        .save(
+            AccountDocument.builder()
+                .id("account-1")
+                .ownerId(Accounts.DEFAULT_OWNER_ID)
+                .initialBalance(100_000L)
+                .isActive(true)
+                .build())
+        .block();
     reactiveMongoTemplate
         .save(transaction("account-1", threeDaysAgo, TransactionType.CREDIT, 5_000L))
         .block();
@@ -176,9 +193,7 @@ class AccountRepositoryAdapterIT extends AbstractIntegrationTest {
         .block();
 
     StepVerifier.create(
-            adapter
-                .balanceHistory("account-1", Accounts.DEFAULT_OWNER_ID, 103_000L, 30)
-                .collectList())
+            adapter.balanceHistory("account-1", Accounts.DEFAULT_OWNER_ID, 30).collectList())
         .assertNext(
             points -> {
               assertThat(points).hasSize(30);
