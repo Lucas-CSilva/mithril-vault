@@ -36,7 +36,9 @@ import reactor.core.publisher.Mono;
  * BalanceProjectionQueuePublisher} collaborator is mocked; leader election and the Mongo change
  * stream run for real against the Testcontainers replica set.
  */
-@TestPropertySource(properties = "app.projections.enabled=true")
+// app.leader.ttl=3s (vs. the production 30s default) so leadership acquisition, which only ticks
+// every ttl/3, doesn't eat most of AWAIT_TIMEOUT before the change stream even starts.
+@TestPropertySource(properties = {"app.projections.enabled=true", "app.leader.ttl=3s"})
 class AccountBalanceChangeStreamListenerIT extends AbstractIntegrationTest {
 
   private static final String PROJECTION_NAME = "accountBalance";

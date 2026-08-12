@@ -23,7 +23,10 @@ import org.springframework.test.context.TestPropertySource;
  * the "it" profile) so unrelated *IT tests don't run the listener in the background; this class
  * opts back in, same as {@code AccountBalanceChangeStreamListenerIT}.
  */
-@TestPropertySource(properties = "app.projections.enabled=true")
+// Shrinks the leader-lease TTL from the production 30s default so leadership acquisition (which
+// only ticks every ttl/3) doesn't eat a large chunk of AWAIT_TIMEOUT under full-suite CPU/GC
+// contention — this test was intermittently timing out on `./gradlew test` at 60s otherwise.
+@TestPropertySource(properties = {"app.projections.enabled=true", "app.leader.ttl=3s"})
 class AccountBalanceEventualConsistencyIT extends AbstractIntegrationTest {
 
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(60);
