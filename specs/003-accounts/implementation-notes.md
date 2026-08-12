@@ -648,14 +648,14 @@ Note: `AccountReadRepository.currentBalance(...)` at this call site should keep 
 instead of an aggregation now) — the reconcile flow doesn't need any code change here beyond
 `reconcileBalances`, it already goes through the port.
 
-### 11.10 Explicitly deferred in this pass
+### 11.10 Snapshot + reconciliation jobs
 
-- `BalanceSnapshotScheduler` / `balance_snapshots` population — schema exists (§11.2), nothing
-  writes to it yet. Add `// TODO(ADR-003): BalanceSnapshotScheduler, see materialized-projections.md §3.3`.
-- `BalanceReconciliationJob` — not built. Add `// TODO(ADR-003): reconciliation job, see
-  materialized-projections.md §3.4` near `recomputeBalance`. §11.6 above explains exactly which
-  failure mode this leaves open and why the transactional wrap already closes the worst of it.
-- `InvoiceTotalProjector`, `Card`/`Invoice` materialization — `005-cards`'s job, not this pass.
+- `BalanceSnapshotJob` / `BalanceReconciliationJob` — built. See
+  `specs/003-accounts/balance-reconciliation-technical-solution.md` (SPEC-003-RECON) for the full
+  design: monthly snapshot checkpoint, nightly self-healing reconciliation with `_version`-guarded
+  writes and in-cycle retry on conflicts, `reconciliation.drift.total` /
+  `reconciliation.version_conflict.total` metrics, `balance.scheduler.lock.holder` gauge.
+- `InvoiceTotalProjector`, `Card`/`Invoice` materialization — `005-cards`'s job, still deferred.
 - Budget `spentAmount` / dashboard "Saldo Líquido" reusing this pattern — future work once those
   features exist.
 
@@ -762,10 +762,9 @@ Ordered per §11.0's build order — each numbered group is a mergeable slice, n
 
 **6. `balance-history` (§11.8)**
 - [x] Implemented for real (fixed 2026-08-02): `$match`-equivalent query over `transactions` for the
-      account + 30-day window, grouped by day in Java, seeded from `currentBalance -
-      netChangeOverWindow` and run forward via `Flux.scan`. Left as
-      `// TODO(ADR-003): bound this via balance_snapshots once the reconciliation job exists` per
-      the note below — still an unbounded scan over the window, acceptable at this data volume.
+      account + 30-day window, grouped by day in Java, run forward via `Flux.scan`. Seed anchor
+      switched from the materialized `currentBalance` to `recomputeBalance`'s snapshot-bounded
+      ground truth (§11.10) so the chart can't inherit drift between reconciliation cycles.
 
-**7. Deferred, not built this pass (§11.10)**
-- [ ] `BalanceSnapshotScheduler`, `BalanceReconciliationJob` — not built (by design, deferred)
+**7. Snapshot + reconciliation jobs (§11.10)**
+- [x] `BalanceSnapshotJob`, `BalanceReconciliationJob` — built, tested, observable

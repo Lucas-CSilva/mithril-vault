@@ -142,8 +142,8 @@ for the full design and its own build-order checklist.
 - [x] `AccountResponse` — includes `currentBalance` (materialized), omits `ownerId`
 - [x] Unit tests per handler + `AccountIT`, `AccountRepositoryAdapterIT`, `AccountBalanceChangeStreamListenerIT`,
       `ProjectionCheckpointRepositoryAdapterIT` + cross-tenant isolation test
-- [ ] `balance_snapshots` population (`BalanceSnapshotScheduler`) — schema exists, not built (explicitly deferred)
-- [ ] `BalanceReconciliationJob` — not built (explicitly deferred)
+- [x] `balance_snapshots` population (`BalanceSnapshotJob`) + `BalanceReconciliationJob` — see
+      `specs/003-accounts/balance-reconciliation-technical-solution.md`
 - [ ] `ADJUSTING_TRANSACTION` reconciliation method — not built (explicitly deferred)
 
 #### Frontend
