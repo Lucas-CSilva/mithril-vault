@@ -12,7 +12,7 @@ public record AppProperties(
     Security security,
     Jwt jwt,
     ProjectionLeaderConfig leader,
-    BalanceSnapshotConfig scheduler) {
+    SchedulerConfig scheduler) {
 
   public record Cors(List<String> allowedOrigins) {}
 
@@ -22,5 +22,7 @@ public record AppProperties(
 
   public record ProjectionLeaderConfig(Duration ttl, Integer maxRetries, Duration retryBackoff) {}
 
-  public record BalanceSnapshotConfig(CronExpression cron, Integer concurrency, ZoneId zone) {}
+  public record SchedulerConfig(BalanceSnapshotConfig balanceSnapshot, ZoneId zone) {}
+
+  public record BalanceSnapshotConfig(CronExpression cron, Integer concurrency) {}
 }

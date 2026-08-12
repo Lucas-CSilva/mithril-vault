@@ -28,7 +28,8 @@ public class BalanceSnapshotJob {
     return accountRepository
         .findAllActive()
         .flatMap(
-            account -> snapshotAccount(account, asOfDate), appProperties.scheduler().concurrency())
+            account -> snapshotAccount(account, asOfDate),
+            appProperties.scheduler().balanceSnapshot().concurrency())
         .then();
   }
 

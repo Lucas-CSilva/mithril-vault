@@ -35,8 +35,9 @@ class BalanceSnapshotJobTest {
   @BeforeEach
   void setUp() {
     var schedulerConfig =
-        new AppProperties.BalanceSnapshotConfig(
-            CronExpression.parse("0 0 0 1 * *"), 16, ZoneId.of("America/Sao_Paulo"));
+        new AppProperties.SchedulerConfig(
+            new AppProperties.BalanceSnapshotConfig(CronExpression.parse("0 0 0 1 * *"), 16),
+            ZoneId.of("America/Sao_Paulo"));
     var appProperties = new AppProperties(null, null, null, null, schedulerConfig);
 
     job = new BalanceSnapshotJob(appProperties, accountRepository, snapshotRepository);
