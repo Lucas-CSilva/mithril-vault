@@ -1,5 +1,6 @@
 package com.mithrilvault.api.infrastructure.persistence.document;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,5 +22,6 @@ public class BalanceSnapshotDocument extends BaseDocument {
   private String accountId;
   private LocalDate asOfDate;
   private Long balance;
-  private String throughTransactionId;
+  private String lastTransactionId;
+  private Instant lastCreatedAt;
 }
