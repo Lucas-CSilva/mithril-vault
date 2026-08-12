@@ -1,10 +1,13 @@
 package com.mithrilvault.api.infrastructure.config;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.Optional;
 import net.javacrumbs.shedlock.core.LockConfiguration;
 import net.javacrumbs.shedlock.core.LockProvider;
@@ -28,11 +31,13 @@ class DistributedLockAspectTest {
   @Mock private DistributedLock distributedLock;
   @Mock private SimpleLock simpleLock;
 
+  private MeterRegistry meterRegistry;
   private DistributedLockAspect aspect;
 
   @BeforeEach
   void setUp() {
-    aspect = new DistributedLockAspect(lockProvider);
+    meterRegistry = new SimpleMeterRegistry();
+    aspect = new DistributedLockAspect(lockProvider, meterRegistry);
     aspect.setEmbeddedValueResolver(value -> value);
 
     when(joinPoint.getSignature()).thenReturn(methodSignature);
@@ -73,5 +78,31 @@ class DistributedLockAspectTest {
     StepVerifier.create((Mono<?>) result).verifyComplete();
 
     verify(joinPoint, times(0)).proceed();
+  }
+
+  @Test
+  void lockHolderGauge_flipsToOneDuringHold_andBackToZeroAfterRelease() throws Throwable {
+    when(joinPoint.proceed())
+        .thenReturn(
+            Mono.defer(
+                () -> {
+                  assertThat(gaugeValue()).isEqualTo(1);
+                  return Mono.empty();
+                }));
+    when(lockProvider.lock(any(LockConfiguration.class))).thenReturn(Optional.of(simpleLock));
+
+    Object result = aspect.lockMethod(joinPoint, distributedLock);
+
+    StepVerifier.create((Mono<?>) result).verifyComplete();
+
+    assertThat(gaugeValue()).isEqualTo(0);
+  }
+
+  private double gaugeValue() {
+    return meterRegistry
+        .get("balance.scheduler.lock.holder")
+        .tag("lock", "test-lock")
+        .gauge()
+        .value();
   }
 }

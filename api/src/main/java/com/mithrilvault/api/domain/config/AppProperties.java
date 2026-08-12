@@ -22,7 +22,16 @@ public record AppProperties(
 
   public record ProjectionLeaderConfig(Duration ttl, Integer maxRetries, Duration retryBackoff) {}
 
-  public record SchedulerConfig(BalanceSnapshotConfig balanceSnapshot, ZoneId zone) {}
+  public record SchedulerConfig(
+      SchedulerJobConfig balanceSnapshot,
+      BalanceReconciliationJobConfig balanceReconciliation,
+      ZoneId zone) {}
 
-  public record BalanceSnapshotConfig(CronExpression cron, Integer concurrency) {}
+  public record SchedulerJobConfig(CronExpression cron, Integer concurrency) {}
+
+  public record BalanceReconciliationJobConfig(
+      CronExpression cron,
+      Integer concurrency,
+      Integer conflictRetryMaxAttempts,
+      Duration conflictRetryBackoff) {}
 }

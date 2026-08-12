@@ -76,3 +76,8 @@ app:
     balance-snapshot:
       cron: "0 0 0 1 * *"
       concurrency: 16
+    balance-reconciliation:
+      cron: "0 0 0 * * *"
+      concurrency: 16
+      conflict-retry-max-attempts: 3
+      conflict-retry-backoff: 200ms

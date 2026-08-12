@@ -1,5 +1,6 @@
 package com.mithrilvault.api.infrastructure.scheduler;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -12,6 +13,9 @@ import com.mithrilvault.api.domain.model.BalanceSnapshot;
 import com.mithrilvault.api.domain.model.TransactionAggregate;
 import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.BalanceSnapshotRepository;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,17 +34,23 @@ class BalanceSnapshotJobTest {
   @Mock private AccountReadRepository accountRepository;
   @Mock private BalanceSnapshotRepository snapshotRepository;
 
+  private MeterRegistry meterRegistry;
   private BalanceSnapshotJob job;
 
   @BeforeEach
   void setUp() {
     var schedulerConfig =
         new AppProperties.SchedulerConfig(
-            new AppProperties.BalanceSnapshotConfig(CronExpression.parse("0 0 0 1 * *"), 16),
+            new AppProperties.SchedulerJobConfig(CronExpression.parse("0 0 0 1 * *"), 16),
+            new AppProperties.BalanceReconciliationJobConfig(
+                CronExpression.parse("0 0 0 * * *"), 16, 3, Duration.ofMillis(200)),
             ZoneId.of("America/Sao_Paulo"));
     var appProperties = new AppProperties(null, null, null, null, schedulerConfig);
 
-    job = new BalanceSnapshotJob(appProperties, accountRepository, snapshotRepository);
+    meterRegistry = new SimpleMeterRegistry();
+    job =
+        new BalanceSnapshotJob(appProperties, accountRepository, snapshotRepository, meterRegistry);
+    job.init();
   }
 
   private static Account account(String id, String ownerId) {
@@ -67,6 +77,8 @@ class BalanceSnapshotJobTest {
     StepVerifier.create(job.execute()).verifyComplete();
 
     verify(snapshotRepository, times(2)).save(any(BalanceSnapshot.class));
+    assertThat(meterRegistry.get("balance-snapshot.saved.total").counter().count()).isEqualTo(2);
+    assertThat(meterRegistry.get("balance-snapshot.failed.total").counter().count()).isEqualTo(0);
   }
 
   @Test
@@ -85,6 +97,8 @@ class BalanceSnapshotJobTest {
     StepVerifier.create(job.execute()).verifyComplete();
 
     verify(snapshotRepository, times(1)).save(any(BalanceSnapshot.class));
+    assertThat(meterRegistry.get("balance-snapshot.saved.total").counter().count()).isEqualTo(1);
+    assertThat(meterRegistry.get("balance-snapshot.failed.total").counter().count()).isEqualTo(1);
   }
 
   @Test
@@ -94,5 +108,7 @@ class BalanceSnapshotJobTest {
     StepVerifier.create(job.execute()).verifyComplete();
 
     verify(snapshotRepository, never()).save(any(BalanceSnapshot.class));
+    assertThat(meterRegistry.get("balance-snapshot.saved.total").counter().count()).isEqualTo(0);
+    assertThat(meterRegistry.get("balance-snapshot.failed.total").counter().count()).isEqualTo(0);
   }
 }

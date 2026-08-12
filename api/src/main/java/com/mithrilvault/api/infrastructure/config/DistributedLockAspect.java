@@ -1,9 +1,13 @@
 package com.mithrilvault.api.infrastructure.config;
 
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +36,10 @@ public class DistributedLockAspect implements EmbeddedValueResolverAware {
   private StringValueResolver resolver;
 
   private final LockProvider lockProvider;
+  private final MeterRegistry meterRegistry;
   private final ExpressionParser parser = new SpelExpressionParser();
+  private final ConcurrentHashMap<String, AtomicInteger> lockHolderGauges =
+      new ConcurrentHashMap<>();
 
   @Override
   public void setEmbeddedValueResolver(@NonNull StringValueResolver resolver) {
@@ -92,8 +99,22 @@ public class DistributedLockAspect implements EmbeddedValueResolverAware {
     }
 
     log.info("Successfully acquired lock: {} ", lockName);
+    lockHolderGauge(lockName).set(1);
 
     return executeLockMethod(joinPoint, lock.get(), lockName);
+  }
+
+  private AtomicInteger lockHolderGauge(String lockName) {
+    return lockHolderGauges.computeIfAbsent(
+        lockName,
+        name -> {
+          AtomicInteger holder = new AtomicInteger();
+          Gauge.builder("balance.scheduler.lock.holder", holder, AtomicInteger::get)
+              .tag("lock", name)
+              .description("Whether this instance currently holds the named ShedLock")
+              .register(meterRegistry);
+          return holder;
+        });
   }
 
   private String resolveLockName(ProceedingJoinPoint joinPoint, DistributedLock distributedLock) {
@@ -151,6 +172,8 @@ public class DistributedLockAspect implements EmbeddedValueResolverAware {
       log.info("Successfully released lock: {} ", lockName);
     } catch (Exception e) {
       log.error("Failed to release lock: {} ", lockName, e);
+    } finally {
+      lockHolderGauge(lockName).set(0);
     }
   }
 

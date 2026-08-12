@@ -60,9 +60,10 @@ public class MongoIndexConfig {
                 createIndexes(
                     mongoTemplate,
                     BalanceSnapshotDocument.class,
-                    new Index().on(BalanceSnapshotDocument.Fields.ownerId, Sort.Direction.ASC),
-                    new Index().on(BalanceSnapshotDocument.Fields.accountId, Sort.Direction.ASC),
-                    new Index().on(BalanceSnapshotDocument.Fields.asOfDate, Sort.Direction.DESC)))
+                    new Index()
+                        .on(BalanceSnapshotDocument.Fields.ownerId, Sort.Direction.ASC)
+                        .on(BalanceSnapshotDocument.Fields.accountId, Sort.Direction.ASC)
+                        .on(BalanceSnapshotDocument.Fields.asOfDate, Sort.Direction.DESC)))
             .subscribe();
   }
 
