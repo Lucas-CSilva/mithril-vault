@@ -412,7 +412,7 @@ formula already states (`initialBalance + 0 - 0`).
   — it has no `ownerId` (infra-only shared state, same reasoning as `shedLock` in ADR-002) and no
   `_version` (single writer: the listener itself, never contended).
 - New `BalanceSnapshotDocument` (`@Document(collection = "balance_snapshots")`): `ownerId`,
-  `accountId`, `asOfDate` (`LocalDate`), `balance` (`Long`), `throughTransactionId`. Not built by
+  `accountId`, `asOfDate` (`LocalDate`), `balance` (`Long`), `lastTransactionId`. Not built by
   this pass (§11.10), but the schema is here so the backfill/reconciliation follow-up doesn't
   need a second data-model pass.
 

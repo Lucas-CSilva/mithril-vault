@@ -9,7 +9,7 @@
 >   (FR-005, NFR-004, NFR-006)
 > - **Linked ADR:** `docs/adr/ADR-003-materialized-derived-balances.md`
 > - **Source design:** `docs/technical-solutions/materialized-projections.md` (SPEC-CROSS-01) §3.3–§3.4 —
->   that document designed `BalanceSnapshotScheduler`/`BalanceReconciliationJob` as a cross-cutting
+>   that document designed `BalanceSnapshotJob`/`BalanceReconciliationJob` as a cross-cutting
 >   pattern (shared with `005-cards`'s future invoice-total equivalent) but explicitly left them
 >   unbuilt ("designed, not built this delivery"). This document turns that design into concrete,
 >   account-scoped implementation guidance — the same role `specs/003-accounts/implementation-notes.md`
@@ -29,7 +29,7 @@ detects or corrects drift if the projector ever applies an event wrong (a logic 
 crashes are already covered by the transactional wrap in §11.6). This spec closes that gap with
 two scheduled components:
 
-- **`BalanceSnapshotScheduler`** — periodically checkpoints each account's ground-truth balance
+- **`BalanceSnapshotJob`** — periodically checkpoints each account's ground-truth balance
   into `balance_snapshots`, bounding how far back any future recomputation has to scan.
 - **`BalanceReconciliationJob`** — periodically recomputes ground truth from the latest snapshot
   forward, compares it to the materialized `currentBalance`, and self-heals on mismatch.
@@ -54,7 +54,7 @@ flowchart LR
     ReconCron["@Scheduled\n(nightly)"]
   end
   subgraph Jobs["infrastructure/scheduler"]
-    Snap["BalanceSnapshotScheduler"]
+    Snap["BalanceSnapshotJob"]
     Recon["BalanceReconciliationJob"]
   end
   subgraph Lock["Distributed lock"]
@@ -98,7 +98,7 @@ flowchart LR
 - **`recomputeBalance` is scoped by the latest snapshot, not full history.** `initialBalance +
   SUM(transactions since epoch)` gets more expensive forever as an account accumulates history
   (NFR-006 — the design must not assume small, fixed history). Scoping to "latest
-  `balance_snapshots` entry + transactions since `throughTransactionId`" keeps the scan bounded
+  `balance_snapshots` entry + transactions since `lastTransactionId`" keeps the scan bounded
   regardless of account age.
 - **Self-heal is `_version`-guarded, not a blind overwrite.** A reconciliation self-heal racing a
   live projector `$inc` must not clobber it. See §3.4 flow and §6.2.
@@ -107,7 +107,7 @@ flowchart LR
 
 | Pattern | Applied where | Rationale |
 |---|---|---|
-| Scheduled job + distributed lock | `BalanceSnapshotScheduler`, `BalanceReconciliationJob` | Exactly one instance runs per cycle in a horizontally-scaled deployment — same shape as `InvoiceRolloverScheduler` (ADR-002) |
+| Scheduled job + distributed lock | `BalanceSnapshotJob`, `BalanceReconciliationJob` | Exactly one instance runs per cycle in a horizontally-scaled deployment — same shape as `InvoiceRolloverScheduler` (ADR-002) |
 | Snapshot / checkpoint | `balance_snapshots` | Bounds recomputation cost as history grows (NFR-006) |
 | Self-healing reconciliation | `BalanceReconciliationJob` | Converts "the balance is wrong" from a support ticket into an automatic correction + alertable metric (FR-005) |
 | Optimistic concurrency guard | `_version` on `AccountDocument` | Prevents a self-heal write from clobbering a concurrent, legitimate projector `$inc` |
@@ -128,7 +128,7 @@ Mono<Long> recomputeBalance(String accountId, String ownerId);
 
 **Depends on:** `balance_snapshots` (latest entry for the account, if any — absent means "no
 snapshot yet, sum full history this one time"), `transactions` (signed-amount sum since the
-snapshot's `throughTransactionId`, or since the beginning if no snapshot exists).
+snapshot's `lastTransactionId`, or since the beginning if no snapshot exists).
 
 **Implementation shape** (`AccountRepositoryAdapter`, mirrors the deleted §5 aggregation, now
 scoped):
@@ -141,10 +141,10 @@ Mono<Long> recomputeBalance(String accountId, String ownerId) {
 }
 ```
 
-Only two callers, ever: `BalanceSnapshotScheduler` and `BalanceReconciliationJob`. Never the
+Only two callers, ever: `BalanceSnapshotJob` and `BalanceReconciliationJob`. Never the
 request path (that invariant is exactly what §11.7's read-path rewire established).
 
-### 3.2 `BalanceSnapshotScheduler`
+### 3.2 `BalanceSnapshotJob`
 
 **Responsibility:** Once per cycle (monthly), write one `balance_snapshots` document per account,
 checkpointing `recomputeBalance`'s result and the last transaction it included.
@@ -160,7 +160,7 @@ accounts), `BalanceSnapshotRepository` (new write port, insert-only).
 sequenceDiagram
   autonumber
   participant Cron as "Scheduler (cron trigger)"
-  participant Snap as "BalanceSnapshotScheduler"
+  participant Snap as "BalanceSnapshotJob"
   participant Lock as "ShedLock (Mongo)"
   participant Txns as "MongoDB (transactions)"
   participant SnapCol as "MongoDB (balance_snapshots)"
@@ -219,7 +219,7 @@ sequenceDiagram
 
 | Component | Package | Rationale |
 |---|---|---|
-| `BalanceSnapshotScheduler`, `BalanceReconciliationJob` | `infrastructure/scheduler` | Timer-driven inbound triggers, not HTTP-facing — new package for this codebase, first occupant (mirrors where `InvoiceRolloverScheduler` will later live) |
+| `BalanceSnapshotJob`, `BalanceReconciliationJob` | `infrastructure/scheduler` | Timer-driven inbound triggers, not HTTP-facing — new package for this codebase, first occupant (mirrors where `InvoiceRolloverScheduler` will later live) |
 | `AccountReadRepository.recomputeBalance` | `domain/port` (interface) + `infrastructure/adapter/persistence` (impl in `AccountRepositoryAdapter`) | Same port/adapter split every other read method in this class already uses |
 | `BalanceSnapshotRepository` (new write port) | `domain/port` (interface) + `infrastructure/adapter/persistence` (impl) | Insert-only write port for `balance_snapshots`, same `*Repository` shape as `AccountRepository` |
 | ShedLock configuration (`LockProvider` bean) | `infrastructure/config` | Framework wiring, not a port implementation — same tier as `MongoIndexConfig`/`MongoTransactionConfig` |
@@ -230,7 +230,7 @@ sequenceDiagram
 
 No new fields or collections — `balance_snapshots` is already fully specified in
 `specs/003-accounts/data-model.md` (`ownerId`, `accountId`, `asOfDate`, `balance`,
-`throughTransactionId`) and `MongoIndexConfig` already indexes it (`{ownerId, accountId,
+`lastTransactionId`) and `MongoIndexConfig` already indexes it (`{ownerId, accountId,
 asOfDate desc}`, per implementation-notes.md §11.11). This spec adds exactly one new collection:
 
 | Addition | Description |
@@ -292,7 +292,7 @@ through the projector:
    change, nothing schedules anything yet.
 2. Reintroduce `recomputeBalance` on `AccountReadRepository`/`AccountRepositoryAdapter`, scoped by
    latest snapshot with a full-history fallback when none exists.
-3. Deploy `BalanceSnapshotScheduler`. First run has no prior snapshot for any account, so it falls
+3. Deploy `BalanceSnapshotJob`. First run has no prior snapshot for any account, so it falls
    back to full history once per account — acceptable, a one-time cost, same shape as the original
    backfill (§11.5).
 4. Deploy `BalanceReconciliationJob`. Watch `reconciliation.drift.total` for a full cycle before

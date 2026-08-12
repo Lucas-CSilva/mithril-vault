@@ -103,7 +103,7 @@ ADR-003.
 | `invoiceId` | String (UUID) | FK → invoices |
 | `asOfDate` | Date | Snapshot checkpoint date |
 | `totalAmount` | Int64 | Centavos, as of `asOfDate` |
-| `throughTransactionId` | String (UUID) | Last transaction included in this snapshot's sum |
+| `lastTransactionId` | String (UUID) | Last transaction included in this snapshot's sum |
 
 An OPEN invoice accumulates transactions for at most one billing cycle, so this snapshot mostly
 matters for reconciliation/audit tooling rather than bounding an otherwise-unbounded scan (unlike

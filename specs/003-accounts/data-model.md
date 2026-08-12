@@ -63,7 +63,8 @@ idempotency guard, snapshot cadence, reconciliation/self-heal) in ADR-003.
 | `accountId` | String (UUID) | FK → accounts |
 | `asOfDate` | Date | Snapshot checkpoint date |
 | `balance` | Int64 | Centavos. `currentBalance` as of `asOfDate`. |
-| `throughTransactionId` | String (UUID) | Last transaction included in this snapshot's sum |
+| `lastTransactionId` | String (UUID) | Last transaction included in this snapshot's sum |
+| `lastCreatedAt` | Instant | `createdAt` of that same transaction — paired with `lastTransactionId` as a `(createdAt, _id)` keyset cursor; `_id` alone is not a safe insertion-order proxy across app instances |
 
 Written on a schedule (e.g. monthly). Bounds `recomputeBalance` to "latest snapshot ≤ date +
 transactions since," instead of scanning full account history.
