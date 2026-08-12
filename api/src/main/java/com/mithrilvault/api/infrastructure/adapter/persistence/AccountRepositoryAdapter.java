@@ -1,19 +1,20 @@
 package com.mithrilvault.api.infrastructure.adapter.persistence;
 
 import com.mithrilvault.api.domain.exception.ConflictException;
-import com.mithrilvault.api.domain.model.Account;
-import com.mithrilvault.api.domain.model.BalancePoint;
+import com.mithrilvault.api.domain.model.*;
 import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
+import com.mithrilvault.api.domain.port.TransactionReadRepository;
 import com.mithrilvault.api.infrastructure.mapper.AccountMapper;
+import com.mithrilvault.api.infrastructure.mapper.BalanceSnapshotMapper;
 import com.mithrilvault.api.infrastructure.persistence.AccountMongoRepository;
-import com.mithrilvault.api.infrastructure.persistence.document.TransactionDocument;
+import com.mithrilvault.api.infrastructure.persistence.document.BalanceSnapshotDocument;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -26,8 +27,18 @@ import reactor.core.publisher.Mono;
 public class AccountRepositoryAdapter implements AccountRepository, AccountReadRepository {
 
   private final AccountMapper accountMapper;
+  private final BalanceSnapshotMapper snapshotMapper;
   private final AccountMongoRepository accountRepository;
   private final ReactiveMongoTemplate reactiveMongoTemplate;
+  private final TransactionReadRepository transactionRepository;
+
+  private static final Sort LATEST_SNAPSHOT_FIRST =
+      Sort.by(Sort.Direction.DESC, BalanceSnapshotDocument.Fields.asOfDate);
+
+  @Override
+  public Flux<Account> findAllActive() {
+    return accountRepository.findAllByIsActiveTrue().map(accountMapper::toDomain);
+  }
 
   @Override
   public Mono<Account> save(Account account) {
@@ -62,22 +73,9 @@ public class AccountRepositoryAdapter implements AccountRepository, AccountReadR
 
     // TODO(ADR-003): bound this via balance_snapshots once the reconciliation job exists —
     // an unbounded scan over up to `days` worth of transactions, acceptable at this data volume.
-    Query query =
-        Query.query(
-            Criteria.where(TransactionDocument.Fields.ownerId)
-                .is(ownerId)
-                .and(TransactionDocument.Fields.accountId)
-                .is(accountId)
-                .and(TransactionDocument.Fields.date)
-                .gte(windowStart)
-                .lte(today));
-
-    return reactiveMongoTemplate
-        .find(query, TransactionDocument.class)
-        .collect(
-            Collectors.groupingBy(
-                TransactionDocument::getDate,
-                Collectors.summingLong(txn -> txn.getType().signedAmount(txn.getAmount()))))
+    return transactionRepository
+        .netAmountByDate(accountId, ownerId, windowStart, today)
+        .collectMap(DailyNetAmount::date, DailyNetAmount::netAmount)
         .flatMapMany(
             netChangeByDate -> {
               long windowNetChange =
@@ -92,5 +90,57 @@ public class AccountRepositoryAdapter implements AccountRepository, AccountReadR
                               date, previous.balance() + netChangeByDate.getOrDefault(date, 0L)))
                   .skip(1);
             });
+  }
+
+  @Override
+  public Mono<TransactionAggregate> computeSnapshot(String accountId, String ownerId) {
+    return computeCheckpoint(accountId, ownerId);
+  }
+
+  @Override
+  public Mono<Long> recomputeBalance(String accountId, String ownerId) {
+    return computeCheckpoint(accountId, ownerId).map(TransactionAggregate::balance);
+  }
+
+  private Criteria snapshotScopeCriteria(String accountId, String ownerId) {
+    return Criteria.where(BalanceSnapshotDocument.Fields.accountId)
+        .is(accountId)
+        .and(BalanceSnapshotDocument.Fields.ownerId)
+        .is(ownerId);
+  }
+
+  private Mono<BalanceSnapshot> findLatestSnapshot(String accountId, String ownerId) {
+    return reactiveMongoTemplate
+        .findOne(
+            Query.query(snapshotScopeCriteria(accountId, ownerId)).with(LATEST_SNAPSHOT_FIRST),
+            BalanceSnapshotDocument.class)
+        .map(snapshotMapper::toDomain);
+  }
+
+  private Mono<TransactionAggregate> checkpointFromSnapshot(
+      String accountId, String ownerId, BalanceSnapshot snapshot) {
+    return transactionRepository
+        .netAmountAfter(accountId, ownerId, snapshot.lastTransactionId(), snapshot.lastCreatedAt())
+        .map(delta -> delta.toBuilder().balance(snapshot.balance() + delta.balance()).build());
+  }
+
+  private Mono<TransactionAggregate> checkpointFromInitialBalance(
+      String accountId, String ownerId) {
+    return findByIdAndOwnerId(accountId, ownerId)
+        .flatMap(
+            account ->
+                transactionRepository
+                    .netAmount(accountId, ownerId)
+                    .map(
+                        delta ->
+                            delta.toBuilder()
+                                .balance(account.initialBalance() + delta.balance())
+                                .build()));
+  }
+
+  private Mono<TransactionAggregate> computeCheckpoint(String accountId, String ownerId) {
+    return findLatestSnapshot(accountId, ownerId)
+        .flatMap(snapshot -> checkpointFromSnapshot(accountId, ownerId, snapshot))
+        .switchIfEmpty(checkpointFromInitialBalance(accountId, ownerId));
   }
 }

@@ -11,4 +11,6 @@ public interface AccountMongoRepository extends ReactiveMongoRepository<AccountD
   Flux<AccountDocument> findAllByOwnerId(String ownerId);
 
   Flux<AccountDocument> findAllByOwnerIdAndIsActiveTrue(String ownerId);
+
+  Flux<AccountDocument> findAllByIsActiveTrue();
 }
