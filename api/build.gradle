@@ -72,10 +72,14 @@ dependencies {
 	implementation libs.logstash.logback.encoder
 	implementation libs.spring.cloud.aws.secrets
 	implementation libs.spring.cloud.aws.sqs
+	implementation libs.spring.boot.aspect
 
 	implementation platform(libs.mongock.bom)
 	implementation libs.mongock.springboot
 	implementation libs.mongock.mongodb.reactive
+
+	implementation libs.shedlock.spring
+	implementation libs.shedlock.provider.mongo.reactivestreams
 
 	// ── Development ───────────────────────────
 	developmentOnly libs.spring.boot.devtools
