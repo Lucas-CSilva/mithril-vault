@@ -7,6 +7,7 @@ import com.mithrilvault.api.domain.model.BalanceSnapshot;
 import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.BalanceSnapshotRepository;
 import com.mithrilvault.api.infrastructure.config.DistributedLock;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Builder;
@@ -23,6 +24,7 @@ public class BalanceSnapshotJob {
   private static final String JOB_NAME = "balanceSnapshot";
 
   private final AppProperties appProperties;
+  private final Clock clock;
   private final AccountReadRepository accountRepository;
   private final BalanceSnapshotRepository snapshotRepository;
   private final SchedulerJobMetrics schedulerJobMetrics;
@@ -42,7 +44,7 @@ public class BalanceSnapshotJob {
   @Scheduled(cron = "${app.scheduler.balance-snapshot.cron}")
   @DistributedLock(lockName = "'balanceSnapshot'", lockAtLeastFor = "PT5S", lockAtMostFor = "PT30M")
   public Mono<Void> execute() {
-    LocalDate asOfDate = LocalDate.now(appProperties.scheduler().zone());
+    LocalDate asOfDate = LocalDate.now(clock);
     RunStats stats = RunStats.empty();
 
     return accountRepository

@@ -6,7 +6,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.mithrilvault.api.domain.config.AppProperties;
 import com.mithrilvault.api.domain.exception.BusinessException;
 import com.mithrilvault.api.domain.model.RecurringTransactionSeries;
 import com.mithrilvault.api.domain.model.Transaction;
@@ -19,6 +18,7 @@ import com.mithrilvault.api.domain.service.validation.AccountXorCardValidationRu
 import com.mithrilvault.api.domain.service.validation.RecurringEndDateValidationRule;
 import com.mithrilvault.api.fixture.command.transaction.CreateTransactionCommands;
 import com.mithrilvault.api.fixture.model.Accounts;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -42,11 +42,10 @@ class CreateRecurringTransactionCommandHandlerTest {
 
   @BeforeEach
   void setUp() {
-    var appProperties =
-        new AppProperties(null, null, null, null, null, ZoneId.of("America/Sao_Paulo"));
+    var clock = Clock.system(ZoneId.of("America/Sao_Paulo"));
     handler =
         new CreateRecurringTransactionCommandHandler(
-            appProperties,
+            clock,
             new TransactionValidationService(
                 List.of(new AccountXorCardValidationRule(), new RecurringEndDateValidationRule())),
             originResolver,

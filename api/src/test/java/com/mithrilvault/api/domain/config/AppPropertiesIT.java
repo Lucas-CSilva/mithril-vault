@@ -28,8 +28,8 @@ class AppPropertiesIT extends AbstractIntegrationTest {
   }
 
   @Test
-  void schedulerZone_bindsAsSaoPaulo() {
-    assertThat(appProperties.scheduler().zone()).isEqualTo(ZoneId.of("America/Sao_Paulo"));
+  void zone_bindsAsSaoPaulo() {
+    assertThat(appProperties.zone()).isEqualTo(ZoneId.of("America/Sao_Paulo"));
   }
 
   @Test

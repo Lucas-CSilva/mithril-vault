@@ -14,6 +14,7 @@ import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.ZoneId;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,15 +45,16 @@ class BalanceReconciliationJobTest {
             new AppProperties.SchedulerJobConfig(
                 CronExpression.parse("0 0 0 * * *"), 16, 3, Duration.ofMillis(200)),
             new AppProperties.SchedulerJobConfig(
-                CronExpression.parse("0 0 1 * * *"), 16, 3, Duration.ofMillis(200)),
-            ZoneId.of("America/Sao_Paulo"));
+                CronExpression.parse("0 0 1 * * *"), 16, 3, Duration.ofMillis(200)));
     var appProperties =
         new AppProperties(null, null, null, null, schedulerConfig, ZoneId.of("America/Sao_Paulo"));
+    var clock = Clock.system(ZoneId.of("America/Sao_Paulo"));
 
     meterRegistry = new SimpleMeterRegistry();
     job =
         new BalanceReconciliationJob(
             appProperties,
+            clock,
             accountRepository,
             accountReadRepository,
             new SchedulerJobMetrics(meterRegistry));

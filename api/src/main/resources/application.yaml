@@ -71,8 +71,8 @@ app:
     ttl: 30s
     max-retries: 3
     retry-backoff: 300ms
+  zone: "America/Sao_Paulo"
   scheduler:
-    zone: "America/Sao_Paulo"
     balance-snapshot:
       cron: "0 0 0 1 * *"
       concurrency: 16

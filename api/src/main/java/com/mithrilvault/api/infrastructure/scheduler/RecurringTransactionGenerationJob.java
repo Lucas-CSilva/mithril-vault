@@ -8,6 +8,7 @@ import com.mithrilvault.api.domain.model.RecurringTransactionSeries;
 import com.mithrilvault.api.domain.port.RecurringSeriesReadRepository;
 import com.mithrilvault.api.domain.port.RecurringSeriesRepository;
 import com.mithrilvault.api.infrastructure.config.DistributedLock;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Builder;
@@ -26,6 +27,7 @@ public class RecurringTransactionGenerationJob {
   private static final String JOB_NAME = "recurringGeneration";
 
   private final AppProperties appProperties;
+  private final Clock clock;
   private final RecurringSeriesRepository recurringSeriesRepository;
   private final RecurringSeriesReadRepository recurringSeriesReadRepository;
   private final CreateTransactionCommandHandler createTransactionCommandHandler;
@@ -54,7 +56,7 @@ public class RecurringTransactionGenerationJob {
       lockAtLeastFor = "PT5S",
       lockAtMostFor = "PT30M")
   public Mono<Void> execute() {
-    LocalDate now = LocalDate.now(appProperties.scheduler().zone());
+    LocalDate now = LocalDate.now(clock);
     RunStats stats = RunStats.empty();
 
     return recurringSeriesReadRepository

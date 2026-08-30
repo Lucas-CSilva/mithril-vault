@@ -7,6 +7,7 @@ import com.mithrilvault.api.domain.model.Account;
 import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
 import com.mithrilvault.api.infrastructure.config.DistributedLock;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,6 +27,7 @@ public class BalanceReconciliationJob {
   private static final String JOB_NAME = "balanceReconciliation";
 
   private final AppProperties appProperties;
+  private final Clock clock;
   private final AccountRepository accountRepository;
   private final AccountReadRepository accountReadRepository;
   private final SchedulerJobMetrics schedulerJobMetrics;
@@ -53,7 +55,7 @@ public class BalanceReconciliationJob {
       lockAtLeastFor = "PT5S",
       lockAtMostFor = "PT30M")
   public Mono<Void> execute() {
-    LocalDate asOfDate = LocalDate.now(appProperties.scheduler().zone());
+    LocalDate asOfDate = LocalDate.now(clock);
     RunStats stats = RunStats.empty();
 
     return accountReadRepository

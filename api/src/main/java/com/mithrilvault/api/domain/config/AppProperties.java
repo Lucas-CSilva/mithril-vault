@@ -26,8 +26,7 @@ public record AppProperties(
   public record SchedulerConfig(
       SchedulerJobConfig balanceSnapshot,
       SchedulerJobConfig balanceReconciliation,
-      SchedulerJobConfig recurringGeneration,
-      ZoneId zone) {}
+      SchedulerJobConfig recurringGeneration) {}
 
   public record SchedulerJobConfig(
       CronExpression cron,
