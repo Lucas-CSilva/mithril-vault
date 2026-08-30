@@ -12,7 +12,8 @@ public record AppProperties(
     Security security,
     Jwt jwt,
     ProjectionLeaderConfig leader,
-    SchedulerConfig scheduler) {
+    SchedulerConfig scheduler,
+    ZoneId zone) {
 
   public record Cors(List<String> allowedOrigins) {}
 
@@ -24,12 +25,11 @@ public record AppProperties(
 
   public record SchedulerConfig(
       SchedulerJobConfig balanceSnapshot,
-      BalanceReconciliationJobConfig balanceReconciliation,
+      SchedulerJobConfig balanceReconciliation,
+      SchedulerJobConfig recurringGeneration,
       ZoneId zone) {}
 
-  public record SchedulerJobConfig(CronExpression cron, Integer concurrency) {}
-
-  public record BalanceReconciliationJobConfig(
+  public record SchedulerJobConfig(
       CronExpression cron,
       Integer concurrency,
       Integer conflictRetryMaxAttempts,
