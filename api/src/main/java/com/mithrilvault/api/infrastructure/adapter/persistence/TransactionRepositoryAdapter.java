@@ -13,6 +13,7 @@ import com.mithrilvault.api.infrastructure.persistence.document.BaseDocument;
 import com.mithrilvault.api.infrastructure.persistence.document.TransactionDocument;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -22,6 +23,7 @@ import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -32,11 +34,10 @@ public class TransactionRepositoryAdapter
 
   private final TransactionMapper transactionMapper;
   private final ReactiveMongoTemplate mongoTemplate;
+  private final TransactionalOperator transactionalOperator;
   private final TransactionMongoRepository transactionMongoRepository;
 
   private static final String NET_AMOUNT_ALIAS = "netAmount";
-  private static final String LAST_TRANSACTION_ID_ALIAS = "lastTransactionId";
-  private static final String LAST_CREATED_AT_ALIAS = "lastCreatedAt";
 
   private static final AggregationExpression SIGNED_AMOUNT =
       ConditionalOperators.when(
@@ -69,6 +70,13 @@ public class TransactionRepositoryAdapter
   }
 
   @Override
+  public Flux<Transaction> findByTransferPairId(String ownerId, String transferPairId) {
+    return transactionMongoRepository
+        .findByTransferPairIdAndOwnerId(transferPairId, ownerId)
+        .map(transactionMapper::toDomain);
+  }
+
+  @Override
   public Mono<Transaction> save(Transaction transaction) {
     return transactionMongoRepository
         .save(transactionMapper.toDocument(transaction))
@@ -79,6 +87,16 @@ public class TransactionRepositoryAdapter
             OptimisticLockingFailureException.class,
             ex -> new ConflictException("Transaction was modified concurrently, please retry"))
         .map(transactionMapper::toDomain);
+  }
+
+  @Override
+  public Flux<Transaction> saveAll(List<Transaction> transactions) {
+
+    return transactionalOperator.execute(
+        tx ->
+            transactionMongoRepository
+                .saveAll(transactions.stream().map(transactionMapper::toDocument).toList())
+                .map(transactionMapper::toDomain));
   }
 
   private Criteria accountScopeCriteria(String ownerId, String accountId) {
@@ -160,5 +178,16 @@ public class TransactionRepositoryAdapter
             Aggregation.project().and("_id").as("date").andInclude(NET_AMOUNT_ALIAS)),
         TransactionDocument.class,
         DailyNetAmount.class);
+  }
+
+  @Override
+  public Mono<Boolean> existsByTransferPairId(String ownerId, String transferPairId) {
+    return mongoTemplate.exists(
+        Query.query(
+            Criteria.where(TransactionDocument.Fields.ownerId)
+                .is(ownerId)
+                .and(TransactionDocument.Fields.transferPairId)
+                .is(transferPairId)),
+        TransactionDocument.class);
   }
 }

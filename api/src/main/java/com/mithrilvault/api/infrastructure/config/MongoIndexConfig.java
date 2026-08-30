@@ -64,6 +64,20 @@ public class MongoIndexConfig {
                         .on(BalanceSnapshotDocument.Fields.ownerId, Sort.Direction.ASC)
                         .on(BalanceSnapshotDocument.Fields.accountId, Sort.Direction.ASC)
                         .on(BalanceSnapshotDocument.Fields.asOfDate, Sort.Direction.DESC)))
+            .then(
+                createIndexes(
+                    mongoTemplate,
+                    RecurringTransactionSeriesDocument.class,
+                    new Index()
+                        .on(RecurringTransactionSeriesDocument.Fields.ownerId, Sort.Direction.ASC)
+                        .on(
+                            RecurringTransactionSeriesDocument.Fields.nextOccurrenceDate,
+                            Sort.Direction.ASC),
+                    new Index()
+                        .on(
+                            RecurringTransactionSeriesDocument.Fields.recurringSeriesId,
+                            Sort.Direction.ASC)
+                        .unique()))
             .subscribe();
   }
 
