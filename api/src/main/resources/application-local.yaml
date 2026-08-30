@@ -34,3 +34,5 @@ spring:
         secret-key: test
       secretsmanager:
         endpoint: http://localhost:4566
+      sqs:
+        endpoint: http://localhost:4566
