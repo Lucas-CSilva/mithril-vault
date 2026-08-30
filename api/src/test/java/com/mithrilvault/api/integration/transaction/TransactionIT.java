@@ -44,15 +44,17 @@ class TransactionIT extends AbstractIntegrationTest {
         .create(CreateTransactionCommands.validForAccount(account.id()))
         .expectStatus()
         .isCreated()
-        .expectBody(TransactionResponse.class)
+        .expectBodyList(TransactionResponse.class)
+        .hasSize(1)
         .value(
             body -> {
-              assertThat(body.id()).isNotNull();
-              assertThat(body.accountId()).isEqualTo(account.id());
-              assertThat(body.amount()).isEqualTo(CreateTransactionCommands.DEFAULT_AMOUNT);
-              assertThat(body.description())
+              TransactionResponse transaction = body.get(0);
+              assertThat(transaction.id()).isNotNull();
+              assertThat(transaction.accountId()).isEqualTo(account.id());
+              assertThat(transaction.amount()).isEqualTo(CreateTransactionCommands.DEFAULT_AMOUNT);
+              assertThat(transaction.description())
                   .isEqualTo(CreateTransactionCommands.DEFAULT_DESCRIPTION);
-              assertThat(body.createdAt()).isNotNull();
+              assertThat(transaction.createdAt()).isNotNull();
             });
 
     assertThat(transactionMongoRepository.count().block()).isEqualTo(1);

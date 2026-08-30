@@ -2,6 +2,7 @@ package com.mithrilvault.api.steps;
 
 import com.mithrilvault.api.application.response.TransactionResponse;
 import com.mithrilvault.api.domain.command.transaction.CreateTransactionCommand;
+import java.util.List;
 import lombok.Setter;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -29,10 +30,14 @@ public class TransactionSteps {
   }
 
   public TransactionResponse createAndGet(CreateTransactionCommand command) {
+    return createAndGetAll(command).get(0);
+  }
+
+  public List<TransactionResponse> createAndGetAll(CreateTransactionCommand command) {
     return create(command)
         .expectStatus()
         .isCreated()
-        .expectBody(TransactionResponse.class)
+        .expectBodyList(TransactionResponse.class)
         .returnResult()
         .getResponseBody();
   }
