@@ -136,8 +136,8 @@ values. Past instances are never touched.
 | FR-009 | P0 | The system shall allow the owner to transfer between two of their own accounts, creating a linked DEBIT and CREDIT pair written atomically. |
 | FR-010 | P0 | The system shall treat a repeated transfer-pair identifier as a no-op rather than creating a duplicate transfer. |
 | FR-011 | P0 | The system shall exclude transfers from income/expense totals wherever those totals are computed. |
-| FR-012 | P1 | The system shall allow editing a recurring or installment instance with a choice of "this instance only" or "this and all future instances," regenerating only forward-dated instances. |
-| FR-013 | P1 | The system shall reject an edit or delete that would modify a past (already-elapsed) instance of a recurring/installment series. |
+| FR-012 | P1 | The system shall allow the owner to edit a transaction's `description`, `categoryId`, `notes`, and `tags`; no other field is editable and no transaction is deletable, on any transaction regardless of mode or age. |
+| FR-013 | P1 | The system shall generate a recurring transaction's due-or-earlier instance(s) at creation time and generate each remaining future instance automatically as its date arrives, never before. |
 | FR-014 | P1 | The system shall suggest a category based on keyword matching against the transaction description, without auto-applying it. |
 | FR-015 | P2 | The system shall allow the owner to attach free-form tags and notes to a transaction. |
 | FR-016 | P2 | The system shall provide filtered, paginated retrieval of transactions by account, invoice, category, type, payment method, date range, and description search. |
@@ -168,7 +168,8 @@ values. Past instances are never touched.
 | AC-002 | FR-004 | Given a transaction created against an account named "Nubank", when that account is later renamed to "Nubank Antigo", then the transaction's stored source name still reads "Nubank". |
 | AC-003 | FR-007 | Given an installment purchase of R$100,01 split into 3 installments, when the system generates the series, then the amounts are R$33,35 / R$33,33 / R$33,33 (remainder centavo on the first) and sum exactly to R$100,01. |
 | AC-004 | FR-009, FR-010 | Given a transfer request that fails after the first leg is written, when the write is retried, then either both legs exist or neither does — never one. Given the same transfer-pair id submitted twice, then only one transfer pair exists. |
-| AC-005 | FR-013 | Given a recurring instance dated in the past, when the owner attempts a "this and all future" edit anchored before today, then the system rejects the edit touching past instances with a 422. |
+| AC-005 | FR-012 | Given a `PATCH` request that includes any field other than `description`, `categoryId`, `notes`, or `tags` (e.g. `amount`), when submitted, then the system rejects it with a 422 and persists no change. |
+| AC-007 | FR-013 | Given a recurring series created today with a monthly frequency and no end date, when the create request completes, then exactly the due-or-earlier instance exists and no future-dated instance exists until its own date arrives via the scheduled generation job. |
 | AC-006 | NFR-003, NFR-004 | Given owner A attempts to GET, PATCH, or DELETE a transaction owned by owner B, then the system returns 404. |
 
 ---
@@ -180,6 +181,8 @@ values. Past instances are never touched.
 - Multi-currency or non-BRL amounts.
 - Machine-learning category classification (keyword matching only).
 - Editing the `mode` of an existing transaction (e.g., converting a SINGLE into a RECURRING series after creation).
+- Editing a transaction's `amount`, `date`, `type`, `accountId`/`invoiceId`, or `paymentMethod` after creation — transactions are an append-only ledger (see `docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md`); only `description`, `categoryId`, `notes`, and `tags` are editable.
+- Deleting a transaction, under any circumstance.
 
 ---
 

@@ -36,6 +36,10 @@
 
 **Constraint:** Exactly one of `accountId` or `invoiceId` must be non-null. Enforced at the domain layer.
 
+**Constraint:** Transactions are append-only. `PATCH` may change only `description`, `categoryId`,
+`notes`, `tags`; every other field is immutable once created, and no transaction is ever deleted.
+Enforced at the domain layer. See `docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md`.
+
 **Indexes:**
 
 | Fields | Type | Options | Purpose |
@@ -53,6 +57,41 @@
 
 ---
 
+### `recurring_transaction_series`
+
+The recurring definition — not an instance. `CreateRecurringTransactionCommandHandler` writes one
+of these per series alongside the due-or-earlier `Transaction` instance(s);
+`RecurringTransactionGenerationJob` reads it to generate each future instance as its date arrives.
+See `docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md`.
+
+| Field | BSON Type | Notes |
+|---|---|---|
+| `_id` | String (UUID) | Primary key |
+| `ownerId` | String (UUID) | FK → users. Immutable. |
+| `recurringSeriesId` | String (UUID) | Shared with every generated `Transaction.recurringSeriesId` |
+| `frequency` | String | Enum: `WEEKLY`, `BIWEEKLY`, `MONTHLY`, `BIMONTHLY`, `QUARTERLY`, `SEMIANNUAL`, `ANNUAL` |
+| `endDate` | Date (LocalDate) | Nullable. No instance is generated once `nextOccurrenceDate > endDate`. |
+| `nextOccurrenceDate` | Date (LocalDate) | The date of the next instance to generate. Advanced by `frequency` each time the job fires. |
+| `type` | String | Template field — copied onto each generated `Transaction` |
+| `amount` | Int64 | Template field |
+| `description` | String | Template field |
+| `categoryId` | String (UUID) | Template field, nullable |
+| `paymentMethod` | String | Template field, nullable |
+| `accountId` | String (UUID) | Template field |
+| `tags` | Array\<String\> | Template field |
+| `notes` | String | Template field, nullable |
+| `createdAt` | Date | UTC instant |
+| `_version` | Int64 | Optimistic locking |
+
+**Indexes:**
+
+| Fields | Type | Options | Purpose |
+|---|---|---|---|
+| `{ ownerId: 1, nextOccurrenceDate: 1 }` | Non-unique | — | `RecurringTransactionGenerationJob`'s due-series query |
+| `recurringSeriesId` | Unique | — | One series document per series id |
+
+---
+
 ## Business Rules
 
 ### Account vs Invoice constraint
@@ -66,8 +105,17 @@ Creates two linked transactions atomically:
 Idempotency key: `transferPairId`. Re-submitting the same `transferPairId` is a no-op.
 Transfers are excluded from income/expense KPI totals.
 
-### Recurring series edit rule
-When a recurring instance is edited, all instances from the edited date forward are deleted and regenerated with the updated parameters. Past instances are immutable.
+### Deferred recurring generation rule
+`CreateRecurringTransactionCommandHandler` inserts only the instance(s) due today or earlier, plus
+one `recurring_transaction_series` document holding the series template and
+`nextOccurrenceDate`. `RecurringTransactionGenerationJob` (scheduled, distributed-lock-guarded)
+inserts each remaining instance as its date arrives and advances `nextOccurrenceDate`. No instance
+is ever inserted before its own date. See ADR-005.
+
+### Transaction immutability rule
+A transaction, once created, is never deleted and only `description`, `categoryId`, `notes`, and
+`tags` may be edited. All other fields (`amount`, `date`, `type`, `accountId`/`invoiceId`,
+`paymentMethod`) are permanent. See ADR-005.
 
 ### Installment rule
 N transactions, each with `amount = totalAmount / N` (integer division), with any remainder centavo added to installment 1. Each installment is assigned to the corresponding monthly invoice.
@@ -76,5 +124,3 @@ N transactions, each with `amount = totalAmount / N` (integer division), with an
 - OFX: `fitid` (bank-provided, unique per account statement)
 - CSV: `importHash = SHA-256(date + normalizedDescription + amount)` where normalization = uppercase + collapse whitespace
 
-### Budget alert trigger
-After every transaction creation or update, the system must check if any active budget for `(ownerId, categoryId, month)` has crossed the 80% or 100% threshold. This is a post-write side-effect, not a domain invariant.

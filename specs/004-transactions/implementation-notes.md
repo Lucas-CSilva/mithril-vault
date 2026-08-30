@@ -15,26 +15,29 @@ Spring Data MongoDB 5.x, Spring Security 6.x/7.x pulled in via the BOM).
 
 ```
 domain/model/Transaction.java                      — plain record, no persistence annotations
+domain/model/RecurringTransactionSeries.java        — series template, not an instance (ADR-005)
 domain/model/{PaymentMethod,TransactionType,ImportSource,SourceType}.java  — enums
 domain/command/transaction/CreateTransactionCommand.java   — carries mode (SINGLE/RECURRING/INSTALLMENT/TRANSFER)
-domain/command/transaction/UpdateTransactionCommand.java
+domain/command/transaction/UpdateTransactionCommand.java    — description/categoryId/notes/tags only
 domain/commandhandler/transaction/CreateTransactionCommandHandler.java
 domain/commandhandler/transaction/CreateRecurringTransactionCommandHandler.java
-domain/commandhandler/transaction/CreateInstallmentTransactionCommandHandler.java
+domain/commandhandler/transaction/CreateInstallmentCommandHandler.java
 domain/commandhandler/transaction/CreateTransferCommandHandler.java
 domain/commandhandler/transaction/UpdateTransactionCommandHandler.java
-domain/commandhandler/transaction/DeleteTransactionCommandHandler.java
 domain/queryhandler/transaction/ListTransactionsQueryHandler.java
 domain/queryhandler/transaction/GetTransactionQueryHandler.java
 domain/service/CategorySuggestionService.java       — keyword matching, no ports needed
 domain/port/{TransactionRepository,TransactionReadRepository}.java
-application/controller/TransactionController.java
+domain/port/{RecurringSeriesRepository,RecurringSeriesReadRepository}.java
+application/controller/TransactionController.java   — no DELETE route (ADR-005)
 application/response/TransactionResponse.java (+ TransactionPageResponse)
 application/mapper/TransactionResponseMapper.java
 infrastructure/persistence/document/TransactionDocument.java
+infrastructure/persistence/document/RecurringTransactionSeriesDocument.java
 infrastructure/persistence/TransactionMongoRepository.java
 infrastructure/adapter/persistence/TransactionRepositoryAdapter.java
 infrastructure/mapper/TransactionMapper.java (MapStruct, domain ↔ document)
+infrastructure/scheduler/RecurringTransactionGenerationJob.java (ADR-005)
 ```
 
 `CreateTransactionCommand`'s `mode` field is the dispatch key: the controller's `create` method
@@ -178,32 +181,38 @@ satisfied), [MongoDB Manual — Transactions](https://www.mongodb.com/docs/manua
 
 ## 6. New ground — recurring & installment generation
 
-Both `CreateRecurringTransactionCommandHandler` and `CreateInstallmentTransactionCommandHandler`
-share a shape: one command fans out into N `Transaction` documents linked by a series id
-(`recurringSeriesId` or `installmentSeriesId`), saved via `transactionRepository.saveAll(...)` (no
-transaction needed here — unlike transfers, a partial write of a recurring series isn't a
-correctness problem, just an incomplete series that can be regenerated).
+`CreateRecurringTransactionCommandHandler` and `CreateInstallmentCommandHandler` no longer share
+the same shape they once did — see
+`docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md` for the full
+reasoning. Full task breakdown: `tasks/003-recurring-series-and-instance.md`,
+`tasks/004-recurring-generation-job.md`, `tasks/005-installment.md`.
 
-- **Recurring**: generate instances from `date` forward at `recurring.frequency`'s cadence, until
-  `recurring.endDate` if set, else 12 months ahead (per contract description). Each instance is a
-  full `Transaction` with `isRecurring = true` and the shared `recurringSeriesId`.
-- **Installment**: `installment.totalInstallments` (N) transactions, `amount = totalAmount / N`
-  (integer division — **money rule**: never introduce a float here), with the remainder centavo
-  added to installment 1 (`data-model.md` business rule). Each installment is assigned to the
-  corresponding *monthly* invoice — installment *k* goes to the invoice *k* months after the
-  first one's invoice, following the same closing-day logic as §2's `creditCardId` resolution.
-  Installments only apply to credit-card transactions (contract: "N installments across N
-  invoices (credit card only)").
+- **Installment** (unchanged from the original design): `installment.totalInstallments` (N)
+  transactions, `amount = totalAmount / N` (integer division — **money rule**: never introduce a
+  float here), with the remainder centavo added to installment 1 (`data-model.md` business rule).
+  Each installment is assigned to the corresponding *monthly* invoice — installment *k* goes to
+  the invoice *k* months after the first one's invoice, following the same closing-day logic as
+  §2's `creditCardId` resolution. All N are saved via `transactionRepository.saveAll(...)` at
+  creation time (no transaction wrapper needed — a partial write is an incomplete, regenerable
+  series, not a correctness problem). Installments only apply to credit-card transactions.
+- **Recurring** (changed — split into immediate + deferred): `CreateRecurringTransactionCommandHandler`
+  inserts *only* the instance(s) due today or earlier (in practice: the single instance dated
+  `command.date()`, if it's `<= today`), plus a new `RecurringTransactionSeries` document
+  (`recurring_transaction_series` collection) carrying the series template and
+  `nextOccurrenceDate`. It does **not** generate the rest of the horizon. A new
+  `RecurringTransactionGenerationJob` (`@Scheduled`, `@DistributedLock`-guarded, same shape as
+  `BalanceReconciliationJob`/`BalanceSnapshotJob`) generates each remaining instance as its date
+  arrives, advancing `nextOccurrenceDate` by `frequency` each time, stopping once
+  `nextOccurrenceDate > endDate` (if set).
 
-**Edit scope (`editScope` on `UpdateTransactionCommand`).** Per the recurring-series edit rule:
-editing an instance with `editScope = THIS_AND_FUTURE` deletes all instances from the edited
-date forward (by `recurringSeriesId` + `date >= edited.date`) and regenerates them with the
-updated parameters; `THIS_ONLY` (the default) touches just the one document. Past instances are
-immutable — reject an edit/delete attempt on a `date` before "today" with a 422
-(`BusinessException`) if `editScope = THIS_AND_FUTURE` would otherwise touch history.
+  Why: `AccountBalanceProjector` applies `$inc` unconditionally at insert time with no date check
+  — eagerly inserting a future-dated instance would immediately (and wrongly) change today's
+  materialized `accounts.currentBalance`. Installments don't have this problem because they target
+  `invoiceId`, and a future invoice's `totalAmount` is *supposed* to show known future charges.
 
-**Delete scope (`deleteScope` on `DELETE /transactions/{id}`)** follows the identical
-`THIS_ONLY`/`THIS_AND_FUTURE` split, same query shape.
+**Editing and deleting.** Per ADR-005, transactions are append-only: no `editScope`, no
+`deleteScope`, no "this and all future" concept, and no delete endpoint at all. See §11 (updated)
+and `tasks/006-update-restricted.md`.
 
 ## 7. New ground — deduplication (import dedup keys)
 
@@ -219,8 +228,8 @@ this feature even though no import command uses them yet:
 When the import feature lands, a duplicate detected via the unique-sparse index's
 `DuplicateKeyException` should be treated as "skip, already imported" — not surfaced as a 409 to
 the user. Leave a short comment-free stub or simply don't build the import command handler yet;
-just make sure `TransactionDocument` has both fields and §9's indexes exist so the schema is
-future-proof.
+just make sure `TransactionDocument` has both fields and §9's (now §10's) indexes exist so the
+schema is future-proof.
 
 ## 8. New ground — category auto-suggestion
 
@@ -233,19 +242,16 @@ doc. Returns `Mono<String>` (nullable `categoryId`) — `null`/empty when no key
 contract's `nullable: true` on the response's `categoryId`. This is a read-only convenience
 endpoint; it does not persist anything and needs no command handler.
 
-## 9. New ground — budget-alert trigger (stub)
+## 9. Budget alerts — no hook needed
 
-Per `data-model.md`'s business rules: *"After every transaction creation or update, the system
-must check if any active budget for `(ownerId, categoryId, month)` has crossed the 80% or 100%
-threshold. This is a post-write side-effect, not a domain invariant."* There is no Budget feature
-yet (`docs/implementation-plan.md` places it in a later phase), so this is a **stub/hook point
-only**, same deferral pattern 003 used for `balance-history` forward-referencing Transactions:
-
-- Define a `BudgetAlertTrigger` port (or a no-op `@Component` implementing a
-  `TransactionWrittenListener`-style interface) that `CreateTransactionCommandHandler` and
-  `UpdateTransactionCommandHandler` call after a successful write.
-- Give it a single no-op implementation now (`Mono.empty()`), so the call site exists and the
-  seam is in place, without inventing budget domain logic that doesn't exist yet.
+The original spec had a §9 here defining a no-op `BudgetAlertTrigger` hook point for
+`CreateTransactionCommandHandler`/`UpdateTransactionCommandHandler` to call, ahead of the
+not-yet-built budgets feature. Per
+`docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md` (Decision 3),
+this is dropped entirely: `docs/adr/ADR-004-defer-projection-fanout-until-budgets.md` already
+decided that this category of speculative build-out is exactly the "infrastructure ahead of the
+feature" it rejected. When `specs/008-budgets` is built, its `BudgetSpentProjector` subscribes to
+the existing Change Stream/SQS pipeline directly — 004 needs zero code, not even a seam, for this.
 
 ## 10. Indexes — programmatic, not annotation-based
 
@@ -284,8 +290,8 @@ The simple path (`CreateTransactionCommandHandler`, `mode = SINGLE`) is structur
 `CreateAccountCommandHandler`: validate (§2's XOR check), build the `Transaction` domain object
 with `.ownerId(ownerId)`, resolve category suggestion only if the client asked for it (it doesn't
 auto-apply — `categoryId` is either client-supplied or left null), call
-`transactionRepository.save(...)`, fire the §9 budget-alert hook, return. `CreateTransferCommand`
-(§5), `CreateRecurringTransactionCommand`/`CreateInstallmentTransactionCommand` (§6) are the three
+`transactionRepository.save(...)`, return — no post-write hook of any kind (§9). `CreateTransferCommand`
+(§5), `CreateRecurringTransactionCommand`/`CreateInstallmentCommand` (§6) are the three
 handlers with genuinely new shapes — everything else in this feature reuses patterns already
 established by Accounts/Categories.
 
@@ -297,7 +303,8 @@ Reuse the existing hierarchy (`NotFoundException` → 404, `ConflictException` �
 *exception instances* (not new classes) are introduced by this feature:
 
 - XOR-constraint violation (§2) → `BusinessException` (422).
-- Recurring/installment edit touching an immutable past instance (§6) → `BusinessException` (422).
+- `PATCH` request containing any field outside the `description`/`categoryId`/`notes`/`tags`
+  whitelist (§6, ADR-005) → `BusinessException` (422).
 
 Transfer-atomicity failures (§5) don't need special handling — if the `TransactionalOperator`
 rolls back, the underlying Mongo/driver exception propagates and is mapped like any other
@@ -313,15 +320,21 @@ Mirror the existing structure, extended for this feature's new behaviors:
 - **Integration** (`*IT`): extend `AbstractIntegrationTest`. Add a `TransactionSteps` helper
   mirroring `AccountSteps` (wraps `WebTestClient`, sets the `accessToken` cookie via
   `UserSteps.createAndGetAccessToken()`).
-- **Tenancy test** (mandatory, P2): cross-tenant isolation — user A cannot `GET`/`PATCH`/`DELETE`
+- **Tenancy test** (mandatory, P2): cross-tenant isolation — user A cannot `GET`/`PATCH`
   user B's transaction (expect 404).
 - **New, mandatory: transfer-atomicity test.** Force a partial failure on the second leg (e.g., a
   Mockito spy on the repository that throws after the first `save`, or a duplicate-key collision
   engineered via a pre-existing `transferPairId`) and assert **neither** leg is persisted —
   the whole point of §5's `TransactionalOperator` wrapping. Without this test, a regression that
   silently drops the `.as(transactionalOperator::transactional)` call would go unnoticed.
-- **Recurring/installment generation tests**: assert the correct count of generated instances,
-  correct `amount` split (including the remainder-centavo rule), and correct series-id linkage.
+- **Installment generation tests**: assert the correct count of generated instances, correct
+  `amount` split (including the remainder-centavo rule), and correct series-id linkage.
+- **New, mandatory: deferred-recurring-generation tests.** Creating a series with a future start
+  date generates zero `Transaction` instances at creation time (only the series document);
+  `RecurringTransactionGenerationJob` generates exactly the due instance(s) and advances
+  `nextOccurrenceDate`; nothing is generated past `endDate`.
+- **New, mandatory: whitelist-rejection test.** A `PATCH` containing `amount` (or any
+  non-whitelisted field) is rejected with 422 and the document is unchanged.
 
 Docs: [Project Reactor — `StepVerifier`](https://projectreactor.io/docs/test/release/reference/index.html).
 
@@ -329,16 +342,19 @@ Docs: [Project Reactor — `StepVerifier`](https://projectreactor.io/docs/test/r
 
 ## Summary checklist
 
-- [ ] `Transaction` domain record + `TransactionDocument` (`@Version` included)
-- [ ] `TransactionMongoRepository` (thin) + `TransactionRepositoryAdapter` (owner-scoped, paginated queries)
-- [ ] Indexes added to `MongoIndexConfig` (owner, owner+date, owner+account+date, owner+invoice, owner+category+date, owner+importHash unique-sparse, owner+fitid unique-sparse, recurringSeriesId, installmentSeriesId, transferPairId)
-- [ ] `CreateTransactionCommandHandler` (SINGLE mode) with the account/invoice XOR check
-- [ ] `CreateTransferCommandHandler` — real `TransactionalOperator`-wrapped two-leg write + `transferPairId` idempotency check
-- [ ] `CreateRecurringTransactionCommandHandler` / `CreateInstallmentTransactionCommandHandler` — series generation, integer-division installment split with remainder rule
-- [ ] `UpdateTransactionCommandHandler` — `editScope` (THIS_ONLY / THIS_AND_FUTURE) regeneration, past-instance immutability guard
-- [ ] `DeleteTransactionCommandHandler` — `deleteScope` equivalent
-- [ ] `ListTransactionsQueryHandler` — full filter set + pagination (`TransactionPage`)
-- [ ] `CategorySuggestionService` + `GET /transactions/suggest-category`
-- [ ] Budget-alert trigger stub (no-op implementation, seam only)
-- [ ] `TransactionController` — full CRUD + suggest-category, using `@CurrentOwnerId`
-- [ ] Unit tests per handler, integration tests per endpoint, one cross-tenant isolation test, one transfer-atomicity test
+This checklist is superseded by `specs/004-transactions/tasks/` — each task file there carries its
+own scope and acceptance criteria; treat that folder as the actual build order. Kept here only as
+a one-line-per-unit index:
+
+- [x] `Transaction` domain record + `TransactionDocument` (`@Version` included) — done
+- [x] `TransactionMongoRepository` (thin) + `TransactionRepositoryAdapter` — done
+- [x] `CreateTransactionCommandHandler` (SINGLE mode) with the account/invoice XOR check — done
+- [ ] `tasks/001-shared-port-extensions.md` — `saveAll`, `existsByTransferPairId`, recurring-series ports
+- [ ] `tasks/002-transfer.md` — `CreateTransferCommandHandler`
+- [ ] `tasks/003-recurring-series-and-instance.md` — `RecurringTransactionSeries` + `CreateRecurringTransactionCommandHandler`
+- [ ] `tasks/004-recurring-generation-job.md` — `RecurringTransactionGenerationJob`
+- [ ] `tasks/005-installment.md` — `CreateInstallmentCommandHandler`
+- [ ] `tasks/006-update-restricted.md` — `UpdateTransactionCommandHandler` (whitelist-only patch, no delete)
+- [ ] `tasks/007-list-and-get-queries.md` — `ListTransactionsQueryHandler` + `GetTransactionQueryHandler`
+- [ ] `tasks/008-category-suggestion.md` — `CategorySuggestionService` + endpoint
+- [ ] `tasks/009-controller-and-indexes.md` — `TransactionController` wiring + `MongoIndexConfig`

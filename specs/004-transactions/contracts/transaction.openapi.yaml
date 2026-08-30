@@ -70,7 +70,9 @@ paths:
       summary: Create a transaction
       description: |
         Creates a single transaction (manual), a recurring series, a set of installments,
-        or a transfer (two-leg), depending on the `mode` field.
+        or a transfer (two-leg), depending on the `mode` field. Always returns an array,
+        regardless of mode: one element for SINGLE/RECURRING, two for TRANSFER, N for
+        INSTALLMENT.
       operationId: createTransaction
       tags: [transactions]
       requestBody:
@@ -85,11 +87,9 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: "#/components/schemas/TransactionResponse"
-                  - type: array
-                    items:
-                      $ref: "#/components/schemas/TransactionResponse"
+                type: array
+                items:
+                  $ref: "#/components/schemas/TransactionResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -121,10 +121,13 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     patch:
-      summary: Update a transaction
+      summary: Update a transaction's editable fields
       description: |
-        For recurring transactions, use the editScope parameter to control whether
-        only this instance or all future instances are updated.
+        Transactions are an append-only ledger (see
+        docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md). Only
+        description, categoryId, notes, and tags may be changed. Any other field present in the
+        request body is rejected with 422 and no change is applied. There is no delete endpoint —
+        a transaction, once created, exists forever.
       operationId: updateTransaction
       tags: [transactions]
       requestBody:
@@ -145,26 +148,6 @@ paths:
           $ref: "#/components/responses/NotFound"
         "422":
           $ref: "#/components/responses/ValidationError"
-
-    delete:
-      summary: Delete a transaction
-      operationId: deleteTransaction
-      tags: [transactions]
-      parameters:
-        - name: deleteScope
-          in: query
-          schema:
-            type: string
-            enum: [THIS_ONLY, THIS_AND_FUTURE]
-            default: THIS_ONLY
-          description: For recurring series — delete only this instance or all forward instances.
-      responses:
-        "204":
-          description: Deleted
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          $ref: "#/components/responses/NotFound"
 
   /transactions/suggest-category:
     get:
@@ -326,34 +309,26 @@ components:
 
     UpdateTransactionCommand:
       type: object
+      description: |
+        Only these four fields exist on this schema by design — amount, date, type,
+        accountId/invoiceId, and paymentMethod are immutable once a transaction is created (see
+        docs/adr/ADR-005-transaction-immutability-and-deferred-recurring-generation.md). A request
+        body containing any other property is rejected with 422.
       properties:
-        amount:
-          type: integer
-          format: int64
-          minimum: 1
-        date:
-          type: string
-          format: date
         description:
           type: string
+          minLength: 1
           maxLength: 200
         categoryId:
           type: string
           format: uuid
-        paymentMethod:
-          type: string
-          enum: [PIX, TED, DOC, DEBIT_CARD, CREDIT_CARD, BOLETO, CASH, TRANSFER]
+          nullable: true
         tags:
           type: array
-          items: { type: string }
+          items: { type: string, maxLength: 50 }
         notes:
           type: string
           maxLength: 500
-        editScope:
-          type: string
-          enum: [THIS_ONLY, THIS_AND_FUTURE]
-          default: THIS_ONLY
-          description: For recurring series. THIS_AND_FUTURE deletes and regenerates all forward instances.
 
     TransactionResponse:
       type: object
