@@ -1,6 +1,16 @@
 import { API_BASE_URL } from "@/config/api";
 import type { ApiClient } from "@/core/ports/ApiClient";
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 class HttpApiClient implements ApiClient {
   private async request<T>(
     path: string,
@@ -45,7 +55,7 @@ class HttpApiClient implements ApiClient {
       } catch {
         // plain text error body
       }
-      throw new Error(message);
+      throw new ApiError(message, response.status);
     }
 
     if (response.status === 204) {
