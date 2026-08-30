@@ -9,10 +9,11 @@ import com.mithrilvault.api.domain.commandhandler.transaction.CreateRecurringTra
 import com.mithrilvault.api.domain.commandhandler.transaction.CreateTransactionCommandHandler;
 import com.mithrilvault.api.domain.commandhandler.transaction.CreateTransferCommandHandler;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,8 +28,9 @@ public class TransactionController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public Mono<TransactionResponse> create(
-      @RequestBody @Valid CreateTransactionCommand command, @CurrentOwnerId String ownerId) {
+  public Flux<TransactionResponse> create(
+      @RequestBody @NotNull @Valid CreateTransactionCommand command,
+      @CurrentOwnerId String ownerId) {
 
     var transaction =
         switch (command.mode()) {

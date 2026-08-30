@@ -3,6 +3,7 @@ package com.mithrilvault.api.domain.model;
 import com.mithrilvault.api.domain.command.transaction.CreateTransactionCommand;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 import lombok.Builder;
 
@@ -36,44 +37,69 @@ public record Transaction(
     Instant updatedAt,
     Long version) {
 
-  public static Transaction accountTransaction(
-      CreateTransactionCommand command, Account account, String ownerId) {
-    return Transaction.builder()
-        .ownerId(ownerId)
-        .type(command.type())
-        .amount(command.amount())
-        .date(command.date())
-        .description(command.description())
-        .categoryId(command.categoryId())
-        .paymentMethod(command.paymentMethod())
-        .accountId(account.id())
-        .account(new AccountSummary(account.id(), account.name()))
-        .tags(command.tags())
-        .notes(command.notes())
-        .appliedProjections(Set.of())
-        .build();
+  public static Transaction fromCommand(
+      CreateTransactionCommand command, TransactionContext context) {
+    TransactionBuilder builder = buildFromCommand(command, context.ownerId());
+    applyOrigin(builder, context.origin());
+
+    if (context.recurringSeriesId() != null) {
+      builder.isRecurring(true).recurringSeriesId(context.recurringSeriesId());
+    }
+
+    return builder.build();
   }
 
-  public static Transaction debitCardTransaction(
-      CreateTransactionCommand command, Card card, String ownerId) {
-    return Transaction.builder()
-        .ownerId(ownerId)
-        .type(command.type())
-        .amount(command.amount())
-        .date(command.date())
-        .description(command.description())
-        .categoryId(command.categoryId())
-        .paymentMethod(command.paymentMethod())
-        .accountId(card.accountId())
-        .card(new CardSummary(card.id(), card.name()))
-        .tags(command.tags())
-        .notes(command.notes())
-        .appliedProjections(Set.of())
-        .build();
+  private static void applyOrigin(TransactionBuilder builder, TransactionOrigin origin) {
+    if (origin.invoice() != null) {
+      builder
+          .invoiceId(origin.invoice().id())
+          .card(new CardSummary(origin.card().id(), origin.card().name()))
+          .invoice(new InvoiceSummary(origin.invoice().id()));
+      return;
+    }
+
+    if (origin.card() != null) {
+      builder
+          .accountId(origin.card().accountId())
+          .card(new CardSummary(origin.card().id(), origin.card().name()));
+      return;
+    }
+
+    builder
+        .accountId(origin.account().id())
+        .account(new AccountSummary(origin.account().id(), origin.account().name()));
   }
 
-  public static Transaction creditCardTransaction(
-      CreateTransactionCommand command, Card card, Invoice invoice, String ownerId) {
+  public static List<Transaction> transferLeg(
+      CreateTransactionCommand command,
+      Account sourceAccount,
+      Account targetAccount,
+      String ownerId,
+      String transferPairId) {
+
+    var source =
+        buildFromCommand(command, ownerId)
+            .accountId(sourceAccount.id())
+            .account(new AccountSummary(sourceAccount.id(), sourceAccount.name()))
+            .transferPairId(transferPairId)
+            .paymentMethod(PaymentMethod.TRANSFER)
+            .type(TransactionType.DEBIT)
+            .build();
+
+    var target =
+        buildFromCommand(command, ownerId)
+            .accountId(targetAccount.id())
+            .account(new AccountSummary(targetAccount.id(), targetAccount.name()))
+            .transferPairId(transferPairId)
+            .paymentMethod(PaymentMethod.TRANSFER)
+            .type(TransactionType.CREDIT)
+            .build();
+
+    return List.of(source, target);
+  }
+
+  private static TransactionBuilder buildFromCommand(
+      CreateTransactionCommand command, String ownerId) {
     return Transaction.builder()
         .ownerId(ownerId)
         .type(command.type())
@@ -82,12 +108,8 @@ public record Transaction(
         .description(command.description())
         .categoryId(command.categoryId())
         .paymentMethod(command.paymentMethod())
-        .invoiceId(invoice.id())
-        .card(new CardSummary(card.id(), card.name()))
-        .invoice(new InvoiceSummary(invoice.id()))
         .tags(command.tags())
         .notes(command.notes())
-        .appliedProjections(Set.of())
-        .build();
+        .appliedProjections(Set.of());
   }
 }

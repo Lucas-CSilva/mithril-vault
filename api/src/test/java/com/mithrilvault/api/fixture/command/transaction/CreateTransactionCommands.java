@@ -1,7 +1,10 @@
 package com.mithrilvault.api.fixture.command.transaction;
 
 import com.mithrilvault.api.domain.command.transaction.CreateTransactionCommand;
+import com.mithrilvault.api.domain.command.transaction.RecurringConfig;
+import com.mithrilvault.api.domain.command.transaction.TransferConfig;
 import com.mithrilvault.api.domain.model.PaymentMethod;
+import com.mithrilvault.api.domain.model.TransactionFrequency;
 import com.mithrilvault.api.domain.model.TransactionMode;
 import com.mithrilvault.api.domain.model.TransactionType;
 import java.time.LocalDate;
@@ -38,6 +41,50 @@ public final class CreateTransactionCommands {
         .accountId(accountId)
         .cardId(cardId)
         .tags(Set.of())
+        .build();
+  }
+
+  public static CreateTransactionCommand recurringWithEndDateBeforeDate(String accountId) {
+    return CreateTransactionCommand.builder()
+        .mode(TransactionMode.RECURRING)
+        .type(TransactionType.DEBIT)
+        .amount(DEFAULT_AMOUNT)
+        .date(LocalDate.of(2026, 7, 20))
+        .description(DEFAULT_DESCRIPTION)
+        .paymentMethod(PaymentMethod.PIX)
+        .accountId(accountId)
+        .tags(Set.of())
+        .recurring(new RecurringConfig(TransactionFrequency.MONTHLY, LocalDate.of(2026, 7, 1)))
+        .build();
+  }
+
+  public static CreateTransactionCommand transfer(
+      String sourceAccountId, String destinationAccountId, String transferPairId) {
+    return CreateTransactionCommand.builder()
+        .mode(TransactionMode.TRANSFER)
+        .type(TransactionType.DEBIT)
+        .amount(DEFAULT_AMOUNT)
+        .date(LocalDate.of(2026, 7, 20))
+        .description(DEFAULT_DESCRIPTION)
+        .paymentMethod(PaymentMethod.TRANSFER)
+        .accountId(sourceAccountId)
+        .tags(Set.of())
+        .transfer(new TransferConfig(destinationAccountId, transferPairId))
+        .build();
+  }
+
+  public static CreateTransactionCommand recurring(
+      String accountId, LocalDate date, LocalDate endDate) {
+    return CreateTransactionCommand.builder()
+        .mode(TransactionMode.RECURRING)
+        .type(TransactionType.DEBIT)
+        .amount(DEFAULT_AMOUNT)
+        .date(date)
+        .description(DEFAULT_DESCRIPTION)
+        .paymentMethod(PaymentMethod.PIX)
+        .accountId(accountId)
+        .tags(Set.of())
+        .recurring(new RecurringConfig(TransactionFrequency.MONTHLY, endDate))
         .build();
   }
 

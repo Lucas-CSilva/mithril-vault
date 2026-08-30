@@ -12,8 +12,10 @@ import com.mithrilvault.api.domain.model.TransactionOrigin;
 import com.mithrilvault.api.domain.port.TransactionRepository;
 import com.mithrilvault.api.domain.service.TransactionOriginResolver;
 import com.mithrilvault.api.domain.service.TransactionValidationService;
+import com.mithrilvault.api.domain.service.validation.AccountXorCardValidationRule;
 import com.mithrilvault.api.fixture.command.transaction.CreateTransactionCommands;
 import com.mithrilvault.api.fixture.model.Accounts;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +36,9 @@ class CreateTransactionCommandHandlerTest {
   void setUp() {
     handler =
         new CreateTransactionCommandHandler(
-            transactionRepository, originResolver, new TransactionValidationService());
+            transactionRepository,
+            originResolver,
+            new TransactionValidationService(List.of(new AccountXorCardValidationRule())));
   }
 
   @Test

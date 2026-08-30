@@ -1,22 +1,23 @@
 package com.mithrilvault.api.domain.service;
 
 import com.mithrilvault.api.domain.command.transaction.CreateTransactionCommand;
-import com.mithrilvault.api.domain.exception.BusinessException;
-import com.mithrilvault.api.domain.exception.ErrorCode;
+import com.mithrilvault.api.domain.service.validation.TransactionValidationRule;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class TransactionValidationService {
+
+  private final List<TransactionValidationRule> rules;
+
   public Mono<Void> validate(CreateTransactionCommand command) {
-    if (StringUtils.hasText(command.accountId()) && StringUtils.hasText(command.cardId())) {
-
-      return Mono.error(
-          new BusinessException(
-              ErrorCode.VALIDATION_FAILED, "Exactly one of accountId or cardId must be set"));
-    }
-
-    return Mono.empty();
+    return Flux.fromIterable(rules)
+        .filter(rule -> rule.appliesTo(command))
+        .concatMap(rule -> rule.validate(command))
+        .then();
   }
 }
