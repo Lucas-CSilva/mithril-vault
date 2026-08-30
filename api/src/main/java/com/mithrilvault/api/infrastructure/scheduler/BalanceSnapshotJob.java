@@ -1,14 +1,12 @@
 package com.mithrilvault.api.infrastructure.scheduler;
 
 import com.mithrilvault.api.domain.config.AppProperties;
+import com.mithrilvault.api.domain.config.SchedulerJobStatus;
 import com.mithrilvault.api.domain.model.Account;
 import com.mithrilvault.api.domain.model.BalanceSnapshot;
 import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.BalanceSnapshotRepository;
 import com.mithrilvault.api.infrastructure.config.DistributedLock;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Builder;
@@ -22,13 +20,12 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 public class BalanceSnapshotJob {
+  private static final String JOB_NAME = "balanceSnapshot";
+
   private final AppProperties appProperties;
   private final AccountReadRepository accountRepository;
   private final BalanceSnapshotRepository snapshotRepository;
-  private final MeterRegistry meterRegistry;
-
-  private Counter savedCounter;
-  private Counter failedCounter;
+  private final SchedulerJobMetrics schedulerJobMetrics;
 
   @Builder(toBuilder = true)
   private record RunStats(AtomicInteger accounts, AtomicInteger saved, AtomicInteger failed) {
@@ -40,20 +37,6 @@ public class BalanceSnapshotJob {
           .failed(new AtomicInteger())
           .build();
     }
-  }
-
-  @PostConstruct
-  void init() {
-    savedCounter =
-        Counter.builder("balance-snapshot.saved.total")
-            .tag("job", "balanceSnapshot")
-            .description("Balance snapshots successfully checkpointed")
-            .register(meterRegistry);
-    failedCounter =
-        Counter.builder("balance-snapshot.failed.total")
-            .tag("job", "balanceSnapshot")
-            .description("Accounts whose snapshot failed to checkpoint this cycle")
-            .register(meterRegistry);
   }
 
   @Scheduled(cron = "${app.scheduler.balance-snapshot.cron}")
@@ -86,14 +69,14 @@ public class BalanceSnapshotJob {
                 snapshotRepository.save(BalanceSnapshot.create(account, checkpoint, asOfDate)))
         .doOnNext(
             saved -> {
-              savedCounter.increment();
+              schedulerJobMetrics.recordOutcome(JOB_NAME, SchedulerJobStatus.SAVED);
               stats.saved().incrementAndGet();
             })
         .doOnError(
             e -> log.error("Snapshot failed for account {} for date {}", account.id(), asOfDate, e))
         .onErrorResume(
             e -> {
-              failedCounter.increment();
+              schedulerJobMetrics.recordOutcome(JOB_NAME, SchedulerJobStatus.FAILED);
               stats.failed().incrementAndGet();
               return Mono.empty();
             })

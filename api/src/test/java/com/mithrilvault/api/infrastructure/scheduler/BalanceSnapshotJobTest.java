@@ -41,16 +41,33 @@ class BalanceSnapshotJobTest {
   void setUp() {
     var schedulerConfig =
         new AppProperties.SchedulerConfig(
-            new AppProperties.SchedulerJobConfig(CronExpression.parse("0 0 0 1 * *"), 16),
-            new AppProperties.BalanceReconciliationJobConfig(
+            new AppProperties.SchedulerJobConfig(
+                CronExpression.parse("0 0 0 1 * *"), 16, 3, Duration.ofMillis(200)),
+            new AppProperties.SchedulerJobConfig(
                 CronExpression.parse("0 0 0 * * *"), 16, 3, Duration.ofMillis(200)),
+            new AppProperties.SchedulerJobConfig(
+                CronExpression.parse("0 0 1 * * *"), 16, 3, Duration.ofMillis(200)),
             ZoneId.of("America/Sao_Paulo"));
-    var appProperties = new AppProperties(null, null, null, null, schedulerConfig);
+    var appProperties =
+        new AppProperties(null, null, null, null, schedulerConfig, ZoneId.of("America/Sao_Paulo"));
 
     meterRegistry = new SimpleMeterRegistry();
     job =
-        new BalanceSnapshotJob(appProperties, accountRepository, snapshotRepository, meterRegistry);
-    job.init();
+        new BalanceSnapshotJob(
+            appProperties,
+            accountRepository,
+            snapshotRepository,
+            new SchedulerJobMetrics(meterRegistry));
+  }
+
+  private double outcomeTotal(String outcome) {
+    var counter =
+        meterRegistry
+            .find("scheduler.job.outcome.total")
+            .tag("job", "balanceSnapshot")
+            .tag("outcome", outcome)
+            .counter();
+    return counter == null ? 0 : counter.count();
   }
 
   private static Account account(String id, String ownerId) {
@@ -77,8 +94,8 @@ class BalanceSnapshotJobTest {
     StepVerifier.create(job.execute()).verifyComplete();
 
     verify(snapshotRepository, times(2)).save(any(BalanceSnapshot.class));
-    assertThat(meterRegistry.get("balance-snapshot.saved.total").counter().count()).isEqualTo(2);
-    assertThat(meterRegistry.get("balance-snapshot.failed.total").counter().count()).isEqualTo(0);
+    assertThat(outcomeTotal("saved")).isEqualTo(2);
+    assertThat(outcomeTotal("failed")).isEqualTo(0);
   }
 
   @Test
@@ -97,8 +114,8 @@ class BalanceSnapshotJobTest {
     StepVerifier.create(job.execute()).verifyComplete();
 
     verify(snapshotRepository, times(1)).save(any(BalanceSnapshot.class));
-    assertThat(meterRegistry.get("balance-snapshot.saved.total").counter().count()).isEqualTo(1);
-    assertThat(meterRegistry.get("balance-snapshot.failed.total").counter().count()).isEqualTo(1);
+    assertThat(outcomeTotal("saved")).isEqualTo(1);
+    assertThat(outcomeTotal("failed")).isEqualTo(1);
   }
 
   @Test
@@ -108,7 +125,7 @@ class BalanceSnapshotJobTest {
     StepVerifier.create(job.execute()).verifyComplete();
 
     verify(snapshotRepository, never()).save(any(BalanceSnapshot.class));
-    assertThat(meterRegistry.get("balance-snapshot.saved.total").counter().count()).isEqualTo(0);
-    assertThat(meterRegistry.get("balance-snapshot.failed.total").counter().count()).isEqualTo(0);
+    assertThat(outcomeTotal("saved")).isEqualTo(0);
+    assertThat(outcomeTotal("failed")).isEqualTo(0);
   }
 }

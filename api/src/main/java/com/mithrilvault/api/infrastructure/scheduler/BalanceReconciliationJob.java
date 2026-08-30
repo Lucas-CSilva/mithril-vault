@@ -1,14 +1,12 @@
 package com.mithrilvault.api.infrastructure.scheduler;
 
 import com.mithrilvault.api.domain.config.AppProperties;
+import com.mithrilvault.api.domain.config.SchedulerJobStatus;
 import com.mithrilvault.api.domain.exception.ConflictException;
 import com.mithrilvault.api.domain.model.Account;
 import com.mithrilvault.api.domain.port.AccountReadRepository;
 import com.mithrilvault.api.domain.port.AccountRepository;
 import com.mithrilvault.api.infrastructure.config.DistributedLock;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
-import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,13 +23,12 @@ import reactor.util.retry.Retry;
 @RequiredArgsConstructor
 public class BalanceReconciliationJob {
 
+  private static final String JOB_NAME = "balanceReconciliation";
+
   private final AppProperties appProperties;
   private final AccountRepository accountRepository;
   private final AccountReadRepository accountReadRepository;
-  private final MeterRegistry meterRegistry;
-
-  private Counter driftCounter;
-  private Counter versionConflictCounter;
+  private final SchedulerJobMetrics schedulerJobMetrics;
 
   @Builder(toBuilder = true)
   private record RunStats(
@@ -48,21 +45,6 @@ public class BalanceReconciliationJob {
           .failed(new AtomicInteger())
           .build();
     }
-  }
-
-  @PostConstruct
-  void init() {
-    driftCounter =
-        Counter.builder("reconciliation.drift.total")
-            .tag("job", "balanceReconciliation")
-            .description("Balance drift corrections self-healed by the reconciliation job")
-            .register(meterRegistry);
-    versionConflictCounter =
-        Counter.builder("reconciliation.version_conflict.total")
-            .tag("job", "balanceReconciliation")
-            .description(
-                "Self-heal writes that lost a version race with a concurrent balance update")
-            .register(meterRegistry);
   }
 
   @Scheduled(cron = "${app.scheduler.balance-reconciliation.cron}")
@@ -126,14 +108,14 @@ public class BalanceReconciliationJob {
                                 fresh.toBuilder().currentBalance(correctedBalance).build())))
         .doOnNext(
             saved -> {
-              driftCounter.increment();
+              schedulerJobMetrics.recordOutcome(JOB_NAME, SchedulerJobStatus.CORRECTED);
               stats.corrected().incrementAndGet();
               log.info("Self-healed balance drift for account {}", accountId);
             })
         .doOnError(
             ConflictException.class,
             e -> {
-              versionConflictCounter.increment();
+              schedulerJobMetrics.recordOutcome(JOB_NAME, SchedulerJobStatus.CONFLICT);
               stats.versionConflicts().incrementAndGet();
             })
         .then();

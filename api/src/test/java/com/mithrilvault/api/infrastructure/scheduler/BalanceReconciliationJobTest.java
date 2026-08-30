@@ -39,17 +39,23 @@ class BalanceReconciliationJobTest {
   void setUp() {
     var schedulerConfig =
         new AppProperties.SchedulerConfig(
-            new AppProperties.SchedulerJobConfig(CronExpression.parse("0 0 0 1 * *"), 16),
-            new AppProperties.BalanceReconciliationJobConfig(
+            new AppProperties.SchedulerJobConfig(
+                CronExpression.parse("0 0 0 1 * *"), 16, 3, Duration.ofMillis(200)),
+            new AppProperties.SchedulerJobConfig(
                 CronExpression.parse("0 0 0 * * *"), 16, 3, Duration.ofMillis(200)),
+            new AppProperties.SchedulerJobConfig(
+                CronExpression.parse("0 0 1 * * *"), 16, 3, Duration.ofMillis(200)),
             ZoneId.of("America/Sao_Paulo"));
-    var appProperties = new AppProperties(null, null, null, null, schedulerConfig);
+    var appProperties =
+        new AppProperties(null, null, null, null, schedulerConfig, ZoneId.of("America/Sao_Paulo"));
 
     meterRegistry = new SimpleMeterRegistry();
     job =
         new BalanceReconciliationJob(
-            appProperties, accountRepository, accountReadRepository, meterRegistry);
-    job.init();
+            appProperties,
+            accountRepository,
+            accountReadRepository,
+            new SchedulerJobMetrics(meterRegistry));
   }
 
   private static Account account(String id, String ownerId, Long currentBalance) {
@@ -62,11 +68,21 @@ class BalanceReconciliationJobTest {
   }
 
   private double driftTotal() {
-    return meterRegistry.get("reconciliation.drift.total").counter().count();
+    return outcomeTotal("corrected");
   }
 
   private double versionConflictTotal() {
-    return meterRegistry.get("reconciliation.version_conflict.total").counter().count();
+    return outcomeTotal("conflict");
+  }
+
+  private double outcomeTotal(String outcome) {
+    var counter =
+        meterRegistry
+            .find("scheduler.job.outcome.total")
+            .tag("job", "balanceReconciliation")
+            .tag("outcome", outcome)
+            .counter();
+    return counter == null ? 0 : counter.count();
   }
 
   @Test
